@@ -128,13 +128,13 @@ if __name__ == "__main__":
 
     '''测试网跨链桥'''
     web3app = get_w3_by_network('goerli')
-    from_address = 0x365a800a3c6a6B73B29E052fd4F7e68BFD45A086
+    from_address = 0x117f087aD43765245A5a15c3921E3aeC244804a3
     private_key = 'e2facfbd1f0736318382d87b81029b05b7650ba17467c844cea5998a40e5bbc2'
     contract_address = '0x578BAde599406A8fE3d24Fd7f7211c0911F5B29e'
     amount_in_ether = 0.088
     chainId = 5
     check_balance(web3app,from_address)
 
-    result = bridge_arbitrum_eth(web3app, from_address, private_key, contract_address, amount_in_ether, chainId)
-    print(result)
+    #result = bridge_arbitrum_eth(web3app, from_address, private_key, contract_address, amount_in_ether, chainId)
+    #print(result)
     
