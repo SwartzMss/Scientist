@@ -2,13 +2,18 @@
 #https://app.eddy.finance/
 
 from eth_account.messages import encode_defunct
-from rpc import Rpc
+import sys
 import time
 import math
 import web3
 import requests
 import random
 import os
+script_dir = os.path.dirname(os.path.abspath(__file__))
+parent_dir = os.path.dirname(script_dir)
+sys.path.append(parent_dir)
+
+from tools.rpc import Rpc
 from dotenv import load_dotenv
 load_dotenv()
 
