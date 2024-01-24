@@ -54,7 +54,7 @@ class EmailSearcher:
                 current_datetime = datetime.datetime.now(pytz.utc)
 
                 time_diff = current_datetime - email_datetime
-                if time_diff > datetime.timedelta(minutes=5):
+                if time_diff > datetime.timedelta(minutes=1):
                     self.logger("Email is too old.")
                     continue
 

@@ -98,6 +98,7 @@ class ChainingGM:
         return data
 
     def run(self, username, password):
+        time.sleep(30)
         try:
             response = self.requestSendCode(username)
             if response.get('code') != 200:
@@ -153,8 +154,9 @@ if __name__ == '__main__':
         password = credentials["password"]
         if(app.run(username, password) == False):
             retry_list.append((username, password))
+
     failed_list = []
-    time.sleep(30)
+    time.sleep(60)
     log_and_print("start retry faile cause")
     for username, password in retry_list:
         if(app.run(username, password) == False):
