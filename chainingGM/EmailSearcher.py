@@ -1,5 +1,6 @@
 import email
 import imaplib
+import traceback
 from bs4 import BeautifulSoup
 import re
 import pytz
@@ -19,7 +20,13 @@ class EmailSearcher:
         imap_port = 993
         # 建立与邮箱的连接
         mail = imaplib.IMAP4_SSL(imap_server, imap_port)
-        mail.login(username, password)
+        try:
+            time.sleep(5)
+            mail.login(username, password)
+        except imaplib.IMAP4.error as e:
+            mail.logout()  # 注销会话，而不是关闭邮箱，因为没有成功登录
+            raise Exception(f"Error is {e}")
+        
         mail.select("inbox")  # 选择收件箱
 
 
@@ -30,7 +37,7 @@ class EmailSearcher:
             status, messages = mail.search(None, f'SUBJECT "{self.subject}"')
             if status != "OK":
                 self.logger("No messages found!")
-                return None
+                continue
             message_ids = messages[0].split()
             # 获取最新的一封邮件的详细信息
             latest_email_id = message_ids[-1]  # 最新的邮件ID

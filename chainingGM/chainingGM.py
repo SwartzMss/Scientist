@@ -73,7 +73,7 @@ class ChainingGM:
         response = self.session.post(
             url,json=data, timeout=60)
         data = response.json()
-        log_and_print(f"response:{response}")
+        #log_and_print(f"response:{response}")
         return data
 
 
@@ -81,7 +81,7 @@ class ChainingGM:
         url = f"https://api.chainingview.io/api/user/myDetails/sign"
         response = self.session.get(url, headers=self.headers, timeout=60)
         response = response.json()
-        log_and_print(f"response:{response}")
+        #log_and_print(f"response:{response}")
         return response
 
     #请求发送验证码
@@ -94,7 +94,7 @@ class ChainingGM:
         url = f"https://api.chainingview.io/api/user/email_code"
         response = self.session.post(url,data=form_data, timeout=60)
         data = response.json()
-        log_and_print(f"response:{response}")
+        #log_and_print(f"response:{response}")
         return data
 
     def run(self, username, password):
@@ -154,6 +154,8 @@ if __name__ == '__main__':
         if(app.run(username, password) == False):
             retry_list.append((username, password))
     failed_list = []
+    time.sleep(30)
+    log_and_print("start retry faile cause")
     for username, password in retry_list:
         if(app.run(username, password) == False):
             failed_list.append((username, password))
