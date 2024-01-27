@@ -1,10 +1,11 @@
 import os
 import time
+import sys
 import re
 import requests
-from EmailSearcher import EmailSearcher
+from oauth2EmailSearch import oauth2EmailSearch
 import datetime
-
+import random
 import json
 
 # 获取当前时间并格式化为字符串
@@ -25,7 +26,6 @@ def log_and_print(text):
         log_file.write(message + '\n')
 
 
-
 def find_user_credentials(category, exclude=None):
     credentials_list = []
     try:
@@ -33,11 +33,22 @@ def find_user_credentials(category, exclude=None):
             data = json.load(file)
 
         for user in data["users"]:
-            accounts = user["accounts"]
-            if category in accounts and (exclude is None or exclude not in accounts[category]["exception"]):
-                username = accounts[category]["username"]
-                password = accounts[category]["password"]
-                credentials_list.append({"username": username, "password": password})
+            accounts = user.get("accounts", {})
+            if category in accounts:
+                account = accounts[category]
+                # 跳过包含排除项的账户
+                if exclude is not None and "exception" in account and exclude in account["exception"]:
+                    continue
+
+                username = account.get("username")
+                access_token = account.get("access_token")
+                refresh_token = account.get("refresh_token")
+
+                # 如果access_token或refresh_token不存在，可以选择跳过或添加默认值
+                if access_token is None or refresh_token is None:
+                    continue  # 或者使用默认值，例如 access_token = access_token or "default_value"
+
+                credentials_list.append({"username": username, "access_token": access_token, "refresh_token": refresh_token})
 
     except json.JSONDecodeError:
         log_and_print("Invalid JSON data")
@@ -49,19 +60,35 @@ def find_user_credentials(category, exclude=None):
     return credentials_list
 
 
-
 class ChainingGM:
-    def __init__(self, emailSearcher):
-        self.session = requests.Session()
-        self.emailSearcher = emailSearcher
-        self.headers = {}
+    def __init__(self):
+        self.headers = {
+            'user-agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Accept-Language': 'zh-CN,zh;q=0.9',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'Content-Type': 'application/json',
+            'Pragma': 'no-cache',
+            'Sec-Fetch-Dest': 'empty',
+            'Sec-Fetch-Mode': 'cors',
+            'Sec-Fetch-Site': 'cross-site',
+            'sec-ch-ua': '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
+            'sec-ch-ua-mobile': '?0',
+            'sec-ch-ua-platform': '"Windows"',
+            'Referer': 'https://www.intract.io/linea?referralCode=iMe8aK&referralSource=REFERRAL_PAGE&referralLink=https%3A%2F%2Fwww.intract.io%2Freferral',
+        }
         self.code = None
+        self.session = None
 
-    def getpoints():
+    def create_new_session(self):
+        self.session = requests.Session()
+
+    def getpoints(self):
         url = f"https://api.chainingview.io/api/user/myDetails/userEnergyCount"
         response = self.session.get(url, headers=self.headers, timeout=60)
         response = response.json()
-        log_and_print(f"response:{response}")
+        #log_and_print(f"response:{response}")
         return response
 
     def login(self,username, code):
@@ -76,6 +103,29 @@ class ChainingGM:
         #log_and_print(f"response:{response}")
         return data
 
+    def getMyDetails(self):
+        url = f"https://api.chainingview.io/api/user/myDetails/getMyDetails"
+        response = self.session.get(url, headers=self.headers, timeout=60)
+        response = response.json()
+        #log_and_print(f"response:{response}")
+        return response
+
+
+    def getcount(self):
+        url = f"https://api.chainingview.io/api/user/userMission/count"
+        response = self.session.get(url, headers=self.headers, timeout=60)
+        response = response.json()
+        #log_and_print(f"response:{response}")
+        return response
+
+
+    def countdown(self):
+        url = f"https://api.chainingview.io/api/user/config/countdown"
+        form_data = {}
+        response = self.session.post(url,data=form_data, headers=self.headers, timeout=60)
+        response = response.json()
+        #log_and_print(f"response:{response}")
+        return response
 
     def sign(self):
         url = f"https://api.chainingview.io/api/user/myDetails/sign"
@@ -97,13 +147,13 @@ class ChainingGM:
         #log_and_print(f"response:{response}")
         return data
 
-    def run(self, username, password):
-        time.sleep(30)
+    def run(self, username, access_token, refresh_token):
+        self.create_new_session()
         try:
             response = self.requestSendCode(username)
             if response.get('code') != 200:
                 if response.get('code') == 500:
-                    time.sleep(15)
+                    time.sleep(30)
                 raise Exception(f"Error: Response is {response}")
             log_and_print(f"requestSendCode successfully username = {username}")
         except Exception as e:
@@ -111,7 +161,8 @@ class ChainingGM:
             return False
 
         try:
-            code = self.emailSearcher.search_email_by_subject(username, password)
+            emailSearcher = oauth2EmailSearch(subject = 'Chaining View', code_length = 6, logger = log_and_print, access_token = access_token, refresh_token = refresh_token)
+            code = emailSearcher.search_email_by_subject()
             if code == None:
                 raise Exception("Error: cannot find verifi code")
             self.code = code
@@ -132,8 +183,47 @@ class ChainingGM:
             return False
 
         try:
+            response = self.getMyDetails()
+            if response.get('code') != 200:
+                raise Exception(f"Error: Response is {response}")
+            log_and_print(f"getMyDetails successfully username = {username}")
+        except Exception as e:
+            log_and_print(f"getMyDetails failed username = {username}, msg: {e}")
+            return False
+
+        try:
+            response = self.getpoints()
+            if response.get('code') != 200:
+                raise Exception(f"Error: Response is {response}")
+            today_energy = response.get('data', {}).get('todayEnergy', 0)
+            if today_energy != 0:
+                log_and_print(f"already singed successfully username = {username}")
+                return True
+        except Exception as e:
+            log_and_print(f"getpoints failed username = {username}, msg: {e}")
+            return False
+
+        try:
+            response = self.getcount()
+            if response.get('code') != 200:
+                raise Exception(f"Error: Response is {response}")
+            log_and_print(f"getcount successfully username = {username}")
+        except Exception as e:
+            log_and_print(f"getcount failed username = {username}, msg: {e}")
+            return False
+
+        try:
+            response = self.countdown()
+            if response.get('code') != 200:
+                raise Exception(f"Error: Response is {response}")
+            log_and_print(f"countdown successfully username = {username}")
+        except Exception as e:
+            log_and_print(f"countdown failed username = {username}, msg: {e}")
+            return False
+
+        try:
             response = self.sign()
-            if response.get('code') != 200 and response.get('code') != 500:
+            if response.get('code') != 200:
                 raise Exception(f"Error: Response is {response}")
             log_and_print(f"sign successfully username = {username}")
         except Exception as e:
@@ -143,28 +233,29 @@ class ChainingGM:
 
 
 if __name__ == '__main__':
-    emailSearcher= EmailSearcher(subject = 'Chaining View', code_length = 6, logger = log_and_print)
-    app = ChainingGM(emailSearcher)
+    app = ChainingGM()
     retry_list = []
-    credentials_list = find_user_credentials("outlook", "ChainingGM")
 
-    # 遍历账户列表并处理每个账户
+    credentials_list = find_user_credentials("outlook", "ChainingGM")
     for credentials in credentials_list:
         username = credentials["username"]
-        password = credentials["password"]
-        if(app.run(username, password) == False):
-            retry_list.append((username, password))
+        access_token = credentials["access_token"]
+        refresh_token = credentials["refresh_token"]
+        if(app.run(username, access_token, refresh_token) == False):
+            retry_list.append((username, access_token, refresh_token))
 
     failed_list = []
     time.sleep(60)
     log_and_print("start retry faile cause")
-    for username, password in retry_list:
-        if(app.run(username, password) == False):
+    for username, access_token, refresh_token in retry_list:
+        if(app.run(username, access_token, refresh_token) == False):
             failed_list.append((username, password))
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")
 
-    for username, password in failed_list:
+    for username, access_token, refresh_token in failed_list:
         log_and_print(f"final failed username = {username}")
+
+
 
