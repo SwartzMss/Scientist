@@ -107,7 +107,7 @@ class IntractSign:
         url = f"https://api.intract.io/api/qv1/auth/gm-streak"
         response = session.post(url, headers=self.headers, timeout=60)
         data = response.json()
-        log_and_print(f"xxxxx {data} ")
+        #log_and_print(f"data {data} ")
         return data
 
     def wallet(self,hex):

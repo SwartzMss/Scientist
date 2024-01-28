@@ -11,6 +11,10 @@ import random
 import os
 script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
+grandparent_dir = os.path.dirname(parent_dir)
+
+# 将父目录的父目录添加到sys.path中
+sys.path.append(grandparent_dir)
 sys.path.append(parent_dir)
 
 from tools.rpc import Rpc
