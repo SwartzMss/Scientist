@@ -76,7 +76,6 @@ class ChainingGM:
             'sec-ch-ua': '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
             'sec-ch-ua-mobile': '?0',
             'sec-ch-ua-platform': '"Windows"',
-            'Referer': 'https://www.intract.io/linea?referralCode=iMe8aK&referralSource=REFERRAL_PAGE&referralLink=https%3A%2F%2Fwww.intract.io%2Freferral',
         }
         self.code = None
         self.session = None

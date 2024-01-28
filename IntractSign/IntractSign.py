@@ -97,7 +97,7 @@ class IntractSign:
         return data
 
     def _sign_message(self,nonce):
-        log_and_print('wallet:' + str(self.account.address))
+        #log_and_print('wallet:' + str(self.account.address))
         msg = f"Please sign this message to verify your identity. Nonce: {nonce}"
         res = self.account.sign_message(encode_defunct(text=msg))
         return res.signature.hex()
