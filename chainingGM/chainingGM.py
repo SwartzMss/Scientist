@@ -8,12 +8,23 @@ import datetime
 import random
 import json
 
+# 获取当前脚本的绝对路径
+script_dir = os.path.dirname(os.path.abspath(__file__))
+# 获取当前脚本的父目录
+parent_dir = os.path.dirname(script_dir)
+sys.path.append(parent_dir)
+
+# 现在可以从tools目录导入UserInfo
+from tools.UserInfo import UserInfo
+
+# 现在可以从tools目录导入excelWorker
+from tools.excelWorker import excelWorker
+
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
 log_file_path = rf'\\192.168.3.142\SuperWind\Study\ChainingGM_{current_time}.log'
 
-accountfile_path = rf'\\192.168.3.142\SuperWind\Study\account.json'
 
 def log_message(text):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -24,40 +35,6 @@ def log_and_print(text):
     with open(log_file_path, 'a') as log_file:
         print(message)
         log_file.write(message + '\n')
-
-
-def find_user_credentials(category, exclude=None):
-    credentials_list = []
-    try:
-        with open(accountfile_path, 'r') as file:
-            data = json.load(file)
-
-        for user in data["users"]:
-            accounts = user.get("accounts", {})
-            if category in accounts:
-                account = accounts[category]
-                # 跳过包含排除项的账户
-                if exclude is not None and "exception" in account and exclude in account["exception"]:
-                    continue
-
-                username = account.get("username")
-                access_token = account.get("access_token")
-                refresh_token = account.get("refresh_token")
-
-                # 如果access_token或refresh_token不存在，可以选择跳过或添加默认值
-                if access_token is None or refresh_token is None:
-                    continue  # 或者使用默认值，例如 access_token = access_token or "default_value"
-
-                credentials_list.append({"username": username, "access_token": access_token, "refresh_token": refresh_token})
-
-    except json.JSONDecodeError:
-        log_and_print("Invalid JSON data")
-    except KeyError as e:
-        log_and_print(f"Missing key in JSON data: {e}")
-    except FileNotFoundError:
-        log_and_print(f"File '{accountfile_path}' not found")
-
-    return credentials_list
 
 
 class ChainingGM:
@@ -225,6 +202,7 @@ class ChainingGM:
             if response.get('code') != 200:
                 raise Exception(f"Error: Response is {response}")
             log_and_print(f"sign successfully username = {username}")
+            excel_manager.update_info(username, "sign successfully")
         except Exception as e:
             log_and_print(f"sign failed username = {username}, msg: {e}")
             return False
@@ -233,9 +211,12 @@ class ChainingGM:
 
 if __name__ == '__main__':
     app = ChainingGM()
+    UserInfoApp = UserInfo(log_and_print)
+    app = ChainingGM()
     retry_list = []
 
-    credentials_list = find_user_credentials("outlook", "ChainingGM")
+    excel_manager = excelWorker("ChainingGM", log_and_print)
+    credentials_list = UserInfoApp.find_user_credentials_for_chaining("outlook", "ChainingGM")
     for credentials in credentials_list:
         username = credentials["username"]
         access_token = credentials["access_token"]
@@ -255,6 +236,8 @@ if __name__ == '__main__':
 
     for username, access_token, refresh_token in failed_list:
         log_and_print(f"final failed username = {username}")
+        excel_manager.update_info(username, "sign failed")
+    excel_manager.save_msg_and_stop_service()
 
 
 
