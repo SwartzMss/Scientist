@@ -26,14 +26,18 @@ class excelWorker:
         self.cached_data.append({"name": name, "msg": msg})
 
     def save_msg_and_stop_service(self):
-        sheet_name = f"{self.project_name}_{datetime.now().strftime('%Y_%m_%d_%H_%M')}"
-        if not os.path.exists(self.filename):
-            with pd.ExcelWriter(self.filename, engine='openpyxl') as writer:
-                df = pd.DataFrame(self.cached_data)
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-        else:
-            with pd.ExcelWriter(self.filename, engine='openpyxl', mode='a') as writer:
-                df = pd.DataFrame(self.cached_data)
-                df.to_excel(writer, sheet_name=sheet_name, index=False)
-        self.cached_data = []  # Clear cached data
-        self.remove_lockfile()  # Remove the lock file once the process is complete
+        try:
+            sheet_name = f"{self.project_name}_{datetime.now().strftime('%Y_%m_%d_%H_%M')}"
+            if not os.path.exists(self.filename):
+                with pd.ExcelWriter(self.filename, engine='openpyxl') as writer:
+                    df = pd.DataFrame(self.cached_data)
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+            else:
+                with pd.ExcelWriter(self.filename, engine='openpyxl', mode='a') as writer:
+                    df = pd.DataFrame(self.cached_data)
+                    df.to_excel(writer, sheet_name=sheet_name, index=False)
+            self.cached_data = []  # Clear cached data
+            self.remove_lockfile()  # Remove the lock file once the process is complete
+            self.logger(f"Saving data to {self.filename} in sheet {sheet_name}")
+        except Exception as e:
+            self.logger(f"Error saving self.filename， msg: {e}")
