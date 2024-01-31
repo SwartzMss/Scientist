@@ -179,7 +179,7 @@ class IntractSign:
             gm = self.gm()
             if "already done for today" in gm.get('message', ""):
                 log_and_print(f"{userName} gm already done successfully")
-                excel_manager.update_info(username, "sign successfully")
+                excel_manager.update_info(username, "already sign successfully")
                 return True
             streakCount=gm['streakCount']
             log_and_print(f"{userName} gm successfully")
