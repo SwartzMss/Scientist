@@ -40,4 +40,4 @@ class excelWorker:
             self.remove_lockfile()  # Remove the lock file once the process is complete
             self.logger(f"Saving data to {self.filename} in sheet {sheet_name}")
         except Exception as e:
-            self.logger(f"Error saving self.filename， msg: {e}")
+            self.logger(f"Error saving {self.filename}， msg: {e}")
