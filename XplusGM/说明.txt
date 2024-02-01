@@ -1,0 +1,13 @@
+C:\Users\swart>adb devices  ->查看哪些设备
+List of devices attached
+emulator-5554   device
+
+#查看哪些进程打开 ，可以比较打开和关闭时候的列表比较
+C:\Users\swart>adb shell dumpsys activity recents|find "intent={"
+    intent={act=android.intent.action.MAIN cat=[android.intent.category.LAUNCHER] flg=0x10200000 cmp=com.xplus.wallet/.MainActivity}
+    intent={act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.android.launcher3/.Launcher}
+    intent={act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10800100 cmp=com.android.settings/.FallbackHome}
+
+C:\Users\swart>adb shell dumpsys activity recents|find "intent={"
+    intent={act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10000100 cmp=com.android.launcher3/.Launcher}
+    intent={act=android.intent.action.MAIN cat=[android.intent.category.HOME] flg=0x10800100 cmp=com.android.settings/.FallbackHome}

@@ -108,3 +108,35 @@ class UserInfo:
             self.logger(f"File '{accountfile_path}' not found")
 
         return credentials_list
+
+    def find_user_credentials_for_app(self, category, exclude=None):
+        credentials_list = []
+        try:
+            with open(self.accountfile_path, 'r') as file:
+                data = json.load(file)
+
+            for user in data["users"]:
+                username = user.get("alias")
+                proxy = user.get("proxy")
+                accounts = user.get("accounts", {})
+                if category in accounts:
+                    account = accounts[category]
+                    # 跳过包含排除项的账户
+                    if exclude is not None and "exception" in account and exclude in account["exception"]:
+                        continue
+                    index = account.get("index")
+                    devid = account.get("devid")
+                    # 如果access_token或refresh_token不存在，可以选择跳过或添加默认值
+                    if index is None or devid is None:
+                        continue  
+
+                    credentials_list.append({"username": username, "index": index, "devid": devid})
+
+        except json.JSONDecodeError:
+            self.logger("Invalid JSON data")
+        except KeyError as e:
+            self.logger(f"Missing key in JSON data: {e}")
+        except FileNotFoundError:
+            self.logger(f"File '{accountfile_path}' not found")
+
+        return credentials_list
