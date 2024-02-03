@@ -49,13 +49,15 @@ class AZCGM:
 
     def start_ldplayer(self):
         """启动指定索引号的雷电模拟器实例"""
+        self.close_ldplayer()
+        time.sleep(2)
         command = f'"E:\\leidian\\LDPlayer9\\dnplayer.exe" index={self.index}'
         subprocess.Popen(command, shell=True)
 
     def close_ldplayer(self):
         """关闭指定索引号的雷电模拟器实例"""
         command = f'"E:\\leidian\\LDPlayer9\\dnconsole.exe" quit --index {self.index}'
-        subprocess.run(command, shell=True)
+        subprocess.Popen(command, shell=True)
         log_and_print(f"Closing LDPlayer username={self.username}...")
 
     def is_emulator_ready(self, emulator_name):
