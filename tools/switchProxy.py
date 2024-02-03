@@ -42,5 +42,5 @@ class ClashAPIManager:
             return False
 
 
-app = ClashAPIManager()
-app.change_proxy('🇭🇰 HK | 香港 05')
+# app = ClashAPIManager()
+# app.change_proxy('🇭🇰 HK | 香港 05')
