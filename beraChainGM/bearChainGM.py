@@ -174,3 +174,4 @@ if __name__ == "__main__":
         log_and_print(f"final failed username = {username}")
         excel_manager.update_info(username, "sign failed")
     excel_manager.save_msg_and_stop_service()
+    proxyApp.change_proxy("🇭🇰 HK | 香港 01")
