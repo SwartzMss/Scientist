@@ -20,7 +20,7 @@ sys.path.append(parent_dir)
 
 # 现在可以从tools目录导入UserInfo
 from tools.UserInfo import UserInfo
-
+from BerachainBatchTransfer import BerachainBatchTransfer
 # 现在可以从tools目录导入excelWorker
 from tools.excelWorker import excelWorker
 from tools.switchProxy import ClashAPIManager
@@ -65,7 +65,8 @@ class bearChainGM:
 
 
 
-    def run(self, userName, address):
+    def run(self, userName, access_token):
+        address = web3.Account.from_key(access_token).address 
         try:
             # 尝试登录
             try:
@@ -122,17 +123,23 @@ class bearChainGM:
                 return False
 
             try:
-                grey_listed_elements = self.driver.find_elements(By.XPATH, "//h5[contains(text(), 'Grey-listed for 8 hours')]")
-                submitted_elements = self.driver.find_elements(By.XPATH, "//h5[contains(text(), 'Request Submitted')]")
-                if grey_listed_elements:
-                    log_and_print(f"{userName} Operation failed: Grey-listed for 8 hours.")
-                    excel_manager.update_info(username, "Operation failed: Grey-listed for 8 hours")
-                elif submitted_elements:
-                    log_and_print(f"{userName} Operation successful: Request Submitted.")
-                    excel_manager.update_info(username, "Operation successful: Request Submitted.")
-                else:
-                    log_and_print(f"{userName} Status unknown.")
-                    excel_manager.update_info(username, "Operation failed: Status unknown.")
+                element = self.driver.find_element(By.CSS_SELECTOR,'div[role="alert"]>h5')
+                if element:
+                    bera_transfer = BerachainBatchTransfer(private_key=access_token)
+                    balance = bera_transfer.get_balance()
+                    log_and_print(f"{userName}: {element.text} and balance = {balance}")
+                    excel_manager.update_info(username,  f"{element.text} and balance = {balance}")
+                #grey_listed_elements = self.driver.find_elements(By.XPATH, "//h5[contains(text(), 'Grey-listed for 8 hours')]")
+                #submitted_elements = self.driver.find_elements(By.XPATH, "//h5[contains(text(), 'Request Submitted')]")
+                # if grey_listed_elements:
+                #     log_and_print(f"{userName} Operation failed: Grey-listed for 8 hours.")
+                #     excel_manager.update_info(username, "Operation failed: Grey-listed for 8 hours")
+                # elif submitted_elements:
+                #     log_and_print(f"{userName} Operation successful: Request Submitted.")
+                #     excel_manager.update_info(username, "Operation successful: Request Submitted.")
+                # else:
+                #     log_and_print(f"{userName} Status unknown.")
+                #     excel_manager.update_info(username, "Operation failed: Status unknown.")
 
             except WebDriverException:
                 log_and_print(f"{userName}Error checking operation status.")
@@ -162,9 +169,8 @@ if __name__ == "__main__":
             log_and_print(f"cannot find proxy username = {username}")
             continue
         proxyApp.change_proxy(proxyName)
-        time.sleep(5)
-        address = web3.Account.from_key(access_token).address    
-        if(app.run(username, address) == False):
+        time.sleep(5)   
+        if(app.run(username, access_token) == False):
             failed_list.append((username))
 
     if len(failed_list) == 0:
