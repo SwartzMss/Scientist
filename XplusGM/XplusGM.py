@@ -149,11 +149,7 @@ class XplusGM:
             self.cleanup_resources(username, error_occurred)
 
     def cleanup_resources(self, username, error_occurred):
-        if error_occurred:
-            log_and_print(f"{username} encountered an error, initiating cleanup...")
-        else:
-            log_and_print(f"{username} completed successfully, initiating cleanup...")
-        time.sleep(5)  # 等待一些操作完成
+        time.sleep(3)  # 等待一些操作完成
         self.quit()
         time.sleep(1)
         self.close_ldplayer()
@@ -163,7 +159,7 @@ class XplusGM:
 if __name__ == "__main__":
 
     UserInfoApp = UserInfo(log_and_print)
-    excel_manager = excelWorker("Xplus", log_and_print)
+    excel_manager = excelWorker("XplusGM", log_and_print)
     credentials_list = UserInfoApp.find_user_credentials_for_app("AZC", "XplusGM")
     app = XplusGM( "com.xplus.wallet", ".MainActivity")
     failed_list = []

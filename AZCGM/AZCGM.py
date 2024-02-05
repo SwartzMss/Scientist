@@ -23,7 +23,7 @@ from tools.excelWorker import excelWorker
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
-log_file_path = rf'\\192.168.3.142\SuperWind\Study\AZCGM_{current_time}.log'
+log_file_path = rf'\\192.168.3.142\SuperWind\Study\AZC_{current_time}.log'
 
 
 def log_message(text):
@@ -90,18 +90,34 @@ class AZCGM:
         self.driver = webdriver.Remote("http://localhost:4723/wd/hub", desired_caps)
         log_and_print("Connected to Appium.")
 
-    def find_and_click_element(self, xpath = '//android.widget.TextView[@text="连接"]', timeout=5):
+    def find_and_click_element(self, xpath, timeout=5):
         """查找元素并点击"""
         try:
             wait = WebDriverWait(self.driver, timeout)
             element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
             element.click()
-            log_and_print(f"recheck successfully: {self.username}")
-            excel_manager.update_info(self.username, "recheck successfully")
+            return True
         except WebDriverException  as e:
-            log_and_print(f"already GM: {self.username}")
-            excel_manager.update_info(self.username, "already GM ")
-            pass
+            return False
+
+    def find_element(self, xpath, timeout=5):
+        """查找元素并点击"""
+        try:
+            wait = WebDriverWait(self.driver, timeout)
+            element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+            return True
+        except WebDriverException  as e:
+            return False
+
+    def find_and_input_element(self, xpath, text , timeout=5):
+        """查找元素并点击"""
+        try:
+            wait = WebDriverWait(self.driver, timeout)
+            element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+            element.send_keys(text)
+            return True
+        except WebDriverException  as e:
+            return False
 
     def quit(self):
         """退出驱动和关闭模拟器"""
@@ -139,21 +155,51 @@ class AZCGM:
                     log_and_print(f"{username} connect_to_appium failed: {e}")
                     error_occurred = True
 
-            self.find_and_click_element()
+            if not error_occurred:
+                if self.find_and_click_element('//android.view.ViewGroup[@text="确认"]') == True:
+                    log_and_print(f"{username} some error occurred alreay confirmed")
+                if self.find_element('//android.widget.TextView[@text="AZC"]') == True:
+                    log_and_print(f"already GM: {self.username}")
+                    excel_manager.update_info(self.username, "already GM ")
+                else:
+                    isrelogin = None
+                    if self.find_and_click_element('//android.widget.TextView[@text="登录或注册"]')  == True:
+                        usrName, passWd = UserInfoApp.find_username_and_password_by_alias_in_file(username)
+                        self.find_and_input_element('//android.widget.EditText[@text="Example@gmail.com"]', usrName)
+                        time.sleep(1)
+                        self.find_and_input_element('//android.widget.EditText[@text="密码"]', "*Ab910220a")
+                        time.sleep(1)
+                        self.find_and_click_element('//android.widget.TextView[@text="登录"]')
+                        time.sleep(1)
+                        if self.find_and_click_element('//android.view.ViewGroup[@text="确认"]') == True:
+                            log_and_print(f"{username} some error occurred alreay confirmed")
+                            self.find_and_click_element('//android.widget.TextView[@text="登录"]')
+                            time.sleep(1)
+                        log_and_print(f"{username} seesion expired ,need relogin")
+                        isrelogin = False
+                    if self.find_and_click_element('//android.widget.TextView[@text="连接"]') == True:
+                        if isrelogin == False:
+                            isrelogin = True
+                        log_and_print(f"recheck successfully: {self.username} isrelogin = {isrelogin}")
+                        excel_manager.update_info(self.username, "recheck successfully isrelogin = {isrelogin}")
+                    else:
+                        if self.find_element('//android.widget.TextView[@text="AZC"]') == True:
+                            log_and_print(f"already GM: {self.username}")
+                            excel_manager.update_info(self.username, "already GM ")
+                        else:
+                            log_and_print(f"relogin failed: {self.username}")
+                            excel_manager.update_info(self.username, "relogin failed")
+
         finally:
             # Regardless of what happened above, try to clean up.
             self.cleanup_resources(username, error_occurred)
 
     def cleanup_resources(self, username, error_occurred):
-        if error_occurred:
-            log_and_print(f"{username} encountered an error, initiating cleanup...")
-        else:
-            log_and_print(f"{username} completed successfully, initiating cleanup...")
-        time.sleep(5)  # 等待一些操作完成
+        time.sleep(3)  # 等待一些操作完成
         self.quit()
-        time.sleep(5)
+        time.sleep(1)
         self.close_ldplayer()
-        time.sleep(5)
+        time.sleep(1)
 
 # 使用示例
 if __name__ == "__main__":
@@ -164,15 +210,15 @@ if __name__ == "__main__":
     app = AZCGM( "com.azc.azcoiner", ".SplashActivity")
     failed_list = []
     for credentials in credentials_list:
-        username = credentials["username"]
+        alias = credentials["username"]
         index = credentials["index"]
         devid = credentials["devid"]
-        if(app.run(username, index,devid) == False):
-            failed_list.append((username))
+        if(app.run(alias, index,devid) == False):
+            failed_list.append((alias))
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")
 
-    for username in failed_list:
-        log_and_print(f"final failed username = {username}")
+    for alias in failed_list:
+        log_and_print(f"final failed alias = {alias}")
     excel_manager.save_msg_and_stop_service()  

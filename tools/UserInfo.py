@@ -48,6 +48,28 @@ class UserInfo:
 
         return credentials_list
 
+
+    def find_username_and_password_by_alias_in_file(self, alias):
+        try:
+            # 从文件中加载JSON数据
+            with open(self.accountfile_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+            
+            # 遍历用户列表，查找对应的proxy
+            for user in data.get("users", []):
+                if user['alias'] == alias:
+                    # 获取并返回用户名和密码
+                    account_info = user['accounts']['outlook']
+                    return account_info['username'], account_info['password']
+            
+        except json.JSONDecodeError:
+            self.logger("Invalid JSON data")
+        except KeyError as e:
+            self.logger(f"Missing key in JSON data: {e}")
+        except FileNotFoundError:
+            self.logger(f"File '{accountfile_path}' not found")
+        return None,None
+
     def find_proxy_by_alias_in_file(self, alias):
         try:
             # 从文件中加载JSON数据
