@@ -6,13 +6,27 @@ class excelWorker:
     def __init__(self, project_name, logger):
         self.project_name = project_name
         # 设置文件路径
-        target_path = r"\\192.168.3.142\SuperWind\Study"
-        self.filename = os.path.join(target_path, f"{project_name}_{datetime.now().year}_{str(datetime.now().month).zfill(2)}.xlsx")
+        self.target_path = r"\\192.168.3.142\SuperWind\Study"
+        self.filename = os.path.join(self.target_path, f"{project_name}_{datetime.now().year}_{str(datetime.now().month).zfill(2)}.xlsx")
         # 锁文件名现在包含项目名称
-        self.lockfile = os.path.join(target_path, f"{project_name}_excel_is_ongoing1234567890.lock")
+        self.lockfile = os.path.join(self.target_path, f"{project_name}_excel_is_ongoing1234567890.lock")
         self.cached_data = []
         self.logger = logger
         self.create_lockfile()
+
+    def maintain_log_files(self):
+        # 定义要保留的最新日志文件数量
+        max_files = 3
+        # 构造日志文件搜索模式
+        log_pattern = os.path.join(self.target_path, f"{self.project_name}_*.log")
+        # 获取所有匹配的日志文件
+        files = glob.glob(log_pattern)
+        # 按修改时间排序，最新的先
+        files.sort(key=os.path.getmtime, reverse=True)
+        # 删除超过数量限制的旧文件
+        for file in files[max_files:]:
+            os.remove(file)
+            self.logger(f"Removed old log file: {file}")
 
     def create_lockfile(self):
         with open(self.lockfile, 'w') as file:
@@ -26,6 +40,8 @@ class excelWorker:
         self.cached_data.append({"name": name, "msg": msg})
 
     def save_msg_and_stop_service(self):
+        # 在保存Excel之前维护日志文件
+        self.maintain_log_files()
         try:
             # 工作表名称现在包括日期和时间，例如 "05_10_45" 表示每月的第5天上午10点45分
             sheet_name = datetime.now().strftime('%d_%H_%M')
