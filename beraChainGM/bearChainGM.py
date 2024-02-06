@@ -137,9 +137,9 @@ class bearChainGM:
                 # elif submitted_elements:
                 #     log_and_print(f"{userName} Operation successful: Request Submitted.")
                 #     excel_manager.update_info(username, "Operation successful: Request Submitted.")
-                # else:
-                #     log_and_print(f"{userName} Status unknown.")
-                #     excel_manager.update_info(username, "Operation failed: Status unknown.")
+                else:
+                     log_and_print(f"{userName} Status unknown.")
+                     excel_manager.update_info(username, "Operation failed: Status unknown.")
 
             except WebDriverException:
                 log_and_print(f"{userName}Error checking operation status.")
@@ -171,12 +171,12 @@ if __name__ == "__main__":
         proxyApp.change_proxy(proxyName)
         time.sleep(5)   
         if(app.run(username, access_token) == False):
-            failed_list.append((username))
+            failed_list.append(username)
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")
 
-    for username, failed_list in failed_list:
+    for username in failed_list:
         log_and_print(f"final failed username = {username}")
         excel_manager.update_info(username, "sign failed")
     excel_manager.save_msg_and_stop_service()
