@@ -22,8 +22,7 @@ class UserInfo:
                 data = json.load(file)
 
             for user in data["users"]:
-                # 跳过包含排除项的账户
-                if exclude is not None and "exception" in user and exclude in user["exception"]:
+                if "exception" in user and ("ALL" in user["exception"] or (exclude is not None and exclude in user["exception"])):
                     continue
                 alias = user.get("alias")
                 accounts = user.get("accounts", {})
@@ -97,7 +96,7 @@ class UserInfo:
 
             for user in data["users"]:
                 # 跳过包含排除项的账户
-                if exclude is not None and "exception" in user and exclude in user["exception"]:
+                if "exception" in user and ("ALL" in user["exception"] or (exclude is not None and exclude in user["exception"])):
                     continue
                 alias = user.get("alias")
                 accounts = user.get("accounts", {})
@@ -127,7 +126,7 @@ class UserInfo:
 
             for user in data["users"]:
                  # 跳过包含排除项的账户
-                if exclude is not None and "exception" in user and exclude in user["exception"]:
+                if "exception" in user and ("ALL" in user["exception"] or (exclude is not None and exclude in user["exception"])):
                     continue
                 alias = user.get("alias")
                 accounts = user.get("accounts", {})
