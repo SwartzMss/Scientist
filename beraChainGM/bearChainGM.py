@@ -125,7 +125,7 @@ class bearChainGM:
             try:
                 element = self.driver.find_element(By.CSS_SELECTOR,'div[role="alert"]>h5')
                 if element:
-                    bera_transfer = BerachainBatchTransfer(private_key=access_token)
+                    bera_transfer = BerachainBatchTransfer(private_key=key)
                     balance = bera_transfer.get_balance()
                     log_and_print(f"{alias}: {element.text} and balance = {balance}")
                     excel_manager.update_info(alias,  f"{element.text} and balance = {balance}")

@@ -18,7 +18,7 @@ class UserInfo:
     def find_user_outlook_token(self, exclude=None):
         credentials_list = []
         try:
-            with open(self.accountfile_path, 'r') as file:
+            with open(self.accountfile_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
 
             for user in data["users"]:
@@ -91,7 +91,7 @@ class UserInfo:
     def find_user_credentials_for_eth(self, exclude=None):
         credentials_list = []
         try:
-            with open(self.accountfile_path, 'r') as file:
+            with open(self.accountfile_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
 
             for user in data["users"]:
@@ -121,7 +121,7 @@ class UserInfo:
     def find_user_credentials_for_app(self, exclude=None):
         credentials_list = []
         try:
-            with open(self.accountfile_path, 'r') as file:
+            with open(self.accountfile_path, 'r', encoding='utf-8') as file:
                 data = json.load(file)
 
             for user in data["users"]:
