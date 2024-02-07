@@ -37,9 +37,20 @@ class excelWorker:
             os.remove(self.lockfile)
 
     def update_info(self, name, msg):
-        self.cached_data.append({"name": name, "msg": msg})
+    # 查找是否已经有相同name的数据
+        for item in self.cached_data:
+            if item['name'] == name:
+                # 如果找到，就在现有的msg后面追加新的msg，并用换行符分隔
+                item['msg'] += '\n' + msg
+                break
+        else:
+            # 如果没有找到相同的name，就添加一个新的条目
+            self.cached_data.append({"name": name, "msg": msg})
 
     def save_msg_and_stop_service(self):
+        if not self.cached_data: 
+            self.logger(f"no cached_data. no need save file")
+            return
         # 在保存Excel之前维护日志文件
         self.maintain_log_files()
         try:

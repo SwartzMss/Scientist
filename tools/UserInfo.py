@@ -15,29 +15,29 @@ class UserInfo:
         self.accountfile_path = accountfile_path
         self.logger = logger  # logger 参数是传递给类的 log_and_print 函数
 
-    def find_user_credentials_for_chaining(self, category, exclude=None):
+    def find_user_outlook_token(self, exclude=None):
         credentials_list = []
         try:
             with open(self.accountfile_path, 'r') as file:
                 data = json.load(file)
 
             for user in data["users"]:
+                # 跳过包含排除项的账户
+                if exclude is not None and "exception" in user and exclude in user["exception"]:
+                    continue
+                alias = user.get("alias")
                 accounts = user.get("accounts", {})
-                if category in accounts:
-                    account = accounts[category]
-                    # 跳过包含排除项的账户
-                    if exclude is not None and "exception" in account and exclude in account["exception"]:
-                        continue
-
+                if "outlook" in accounts:
+                    account = accounts["outlook"]
                     username = account.get("username")
                     access_token = account.get("access_token")
                     refresh_token = account.get("refresh_token")
 
                     # 如果access_token或refresh_token不存在，可以选择跳过或添加默认值
-                    if access_token is None or refresh_token is None:
-                        continue  # 或者使用默认值，例如 access_token = access_token or "default_value"
+                    if access_token is None or refresh_token is None or username is None:
+                        continue
 
-                    credentials_list.append({"username": username, "access_token": access_token, "refresh_token": refresh_token})
+                    credentials_list.append({"alias": alias, "username": username,"access_token": access_token, "refresh_token": refresh_token})
 
         except json.JSONDecodeError:
             self.logger("Invalid JSON data")
@@ -157,21 +157,23 @@ class UserInfo:
                 data = json.load(file)
 
             for user in data["users"]:
+                 # 跳过包含排除项的账户
+                if exclude is not None and "exception" in user and exclude in user["exception"]:
+                    continue
+                alias = user.get("alias")
+
                 username = user.get("alias")
                 proxy = user.get("proxy")
                 accounts = user.get("accounts", {})
                 if category in accounts:
                     account = accounts[category]
-                    # 跳过包含排除项的账户
-                    if exclude is not None and "exception" in account and exclude in account["exception"]:
-                        continue
                     index = account.get("index")
                     devid = account.get("devid")
                     # 如果access_token或refresh_token不存在，可以选择跳过或添加默认值
                     if index is None or devid is None:
                         continue  
 
-                    credentials_list.append({"username": username, "index": index, "devid": devid})
+                    credentials_list.append({"alias": alias, "index": index, "devid": devid})
 
         except json.JSONDecodeError:
             self.logger("Invalid JSON data")

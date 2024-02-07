@@ -181,7 +181,7 @@ class AZCGM:
                         if isrelogin == False:
                             isrelogin = True
                         log_and_print(f"recheck successfully: {self.username} isrelogin = {isrelogin}")
-                        excel_manager.update_info(self.username, "recheck successfully isrelogin = {isrelogin}")
+                        excel_manager.update_info(self.username, f"recheck successfully isrelogin = {isrelogin}")
                     else:
                         if self.find_element('//android.widget.TextView[@text="AZC"]') == True:
                             log_and_print(f"already GM: {self.username}")

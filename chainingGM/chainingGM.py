@@ -123,17 +123,19 @@ class ChainingGM:
         #log_and_print(f"response:{response}")
         return data
 
-    def run(self, username, access_token, refresh_token):
+    def run(self, alias, username, access_token, refresh_token):
         self.create_new_session()
+        time.sleep(1)
         try:
             response = self.requestSendCode(username)
             if response.get('code') != 200:
                 if response.get('code') == 500:
                     time.sleep(30)
                 raise Exception(f"Error: Response is {response}")
-            log_and_print(f"requestSendCode successfully username = {username}")
+            log_and_print(f"requestSendCode successfully username = {alias}")
         except Exception as e:
-            log_and_print(f"requestSendCode failed username = {username}, msg: {e}")
+            log_and_print(f"requestSendCode failed username = {alias}, msg: {e}")
+            excel_manager.update_info(alias, f"requestSendCode failed msg: {e}")
             return False
 
         try:
@@ -142,9 +144,10 @@ class ChainingGM:
             if code == None:
                 raise Exception("Error: cannot find verifi code")
             self.code = code
-            log_and_print(f"search_email_by_subject successfully username = {username}")
+            log_and_print(f"search_email_by_subject successfully username = {alias}")
         except Exception as e:
-            log_and_print(f"search_email_by_subject failed username = {username}, msg: {e}")
+            log_and_print(f"search_email_by_subject failed username = {alias}, msg: {e}")
+            excel_manager.update_info(alias, f"search_email_by_subject failed msg: {e}")
             return False
         
         try:
@@ -153,18 +156,20 @@ class ChainingGM:
                 raise Exception(f"Error: Response  is {response}")
             token = response['data']['token']
             self.headers['authorization'] = 'Bearer ' + token
-            log_and_print(f"login successfully username = {username}")
+            log_and_print(f"login successfully username = {alias}")
         except Exception as e:
-            log_and_print(f"login failed username = {username}, msg: {e}")
+            log_and_print(f"login failed username = {alias}, msg: {e}")
+            excel_manager.update_info(alias, f"login failed failed msg: {e}")
             return False
 
         try:
             response = self.getMyDetails()
             if response.get('code') != 200:
                 raise Exception(f"Error: Response is {response}")
-            log_and_print(f"getMyDetails successfully username = {username}")
+            log_and_print(f"getMyDetails successfully username = {alias}")
         except Exception as e:
-            log_and_print(f"getMyDetails failed username = {username}, msg: {e}")
+            excel_manager.update_info(alias, f"getMyDetails failed failed msg: {e}")
+            log_and_print(f"getMyDetails failed username = {alias}, msg: {e}")
             return False
 
         try:
@@ -173,40 +178,44 @@ class ChainingGM:
                 raise Exception(f"Error: Response is {response}")
             today_energy = response.get('data', {}).get('todayEnergy', 0)
             if today_energy != 0:
-                log_and_print(f"already singed successfully username = {username}")
-                excel_manager.update_info(username, "already sign successfully")
+                log_and_print(f"already singed successfully username = {alias}")
+                excel_manager.update_info(alias, "already sign successfully")
                 return True
         except Exception as e:
-            log_and_print(f"getpoints failed username = {username}, msg: {e}")
+            log_and_print(f"getpoints failed username = {alias}, msg: {e}")
+            excel_manager.update_info(alias, f"getpoints failed msg: {e}")
             return False
 
         try:
             response = self.getcount()
             if response.get('code') != 200:
                 raise Exception(f"Error: Response is {response}")
-            log_and_print(f"getcount successfully username = {username}")
+            log_and_print(f"getcount successfully username = {alias}")
         except Exception as e:
-            log_and_print(f"getcount failed username = {username}, msg: {e}")
+            log_and_print(f"getcount failed username = {alias}, msg: {e}")
+            excel_manager.update_info(alias, f"getcount failed msg: {e}")
             return False
 
         try:
             response = self.countdown()
             if response.get('code') != 200:
                 raise Exception(f"Error: Response is {response}")
-            log_and_print(f"countdown successfully username = {username}")
+            log_and_print(f"countdown successfully username = {alias}")
         except Exception as e:
-            log_and_print(f"countdown failed username = {username}, msg: {e}")
+            log_and_print(f"countdown failed username = {alias}, msg: {e}")
+            excel_manager.update_info(alias, f"countdown failed msg: {e}")
             return False
 
         try:
             response = self.sign()
             if response.get('code') != 200:
                 raise Exception(f"Error: Response is {response}")
-            log_and_print(f"sign successfully username = {username}")
-            excel_manager.update_info(username, "sign successfully")
+            log_and_print(f"sign successfully username = {alias}")
+            excel_manager.update_info(alias, "sign successfully")
             return True
         except Exception as e:
-            log_and_print(f"sign failed username = {username}, msg: {e}")
+            log_and_print(f"sign failed username = {alias}, msg: {e}")
+            excel_manager.update_info(alias, f"sign failed msg: {e}")
             return False
         
 
@@ -214,31 +223,32 @@ class ChainingGM:
 if __name__ == '__main__':
     app = ChainingGM()
     UserInfoApp = UserInfo(log_and_print)
-    app = ChainingGM()
-    retry_list = []
+    retry_list = [] 
 
     excel_manager = excelWorker("ChainingGM", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_chaining("outlook", "ChainingGM")
+    credentials_list = UserInfoApp.find_user_outlook_token("ChainingGM")
     for credentials in credentials_list:
+        alias = credentials["alias"]
         username = credentials["username"]
         access_token = credentials["access_token"]
         refresh_token = credentials["refresh_token"]
-        if(app.run(username, access_token, refresh_token) == False):
-            retry_list.append((username, access_token, refresh_token))
+        if(app.run(alias, username, access_token, refresh_token) == False):
+            retry_list.append((alias, username, access_token, refresh_token))
 
+
+    if len(retry_list) != 0:
+        log_and_print("start retry faile cause")
+        time.sleep(60)
     failed_list = []
-    time.sleep(60)
-    log_and_print("start retry faile cause")
-    for username, access_token, refresh_token in retry_list:
-        if(app.run(username, access_token, refresh_token) == False):
-            failed_list.append((username, password))
+    for alias, username, access_token, refresh_token in retry_list:
+        if(app.run(alias, username, access_token, refresh_token) == False):
+            failed_list.append(username)
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")
-
-    for username, access_token, refresh_token in failed_list:
-        log_and_print(f"final failed username = {username}")
-        excel_manager.update_info(username, "sign failed")
+    else:
+        for username in failed_list:
+            log_and_print(f"final failed username = {username}")
     excel_manager.save_msg_and_stop_service()
 
 
