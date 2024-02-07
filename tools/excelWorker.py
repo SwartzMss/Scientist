@@ -37,15 +37,20 @@ class excelWorker:
             os.remove(self.lockfile)
 
     def update_info(self, name, msg):
-    # 查找是否已经有相同name的数据
-        for item in self.cached_data:
+        # 首先检查是否已经有相同name的数据
+        existing_item_index = None
+        for index, item in enumerate(self.cached_data):
             if item['name'] == name:
-                # 如果找到，就在现有的msg后面追加新的msg，并用换行符分隔
-                item['msg'] += '\n' + msg
+                # 如果找到，记录下索引位置，稍后删除
+                existing_item_index = index
                 break
-        else:
-            # 如果没有找到相同的name，就添加一个新的条目
-            self.cached_data.append({"name": name, "msg": msg})
+
+        # 如果找到了现有的条目，先删除它
+        if existing_item_index is not None:
+            del self.cached_data[existing_item_index]
+
+        # 然后添加新的条目，无论是否删除了旧的
+        self.cached_data.append({"name": name, "msg": msg})
 
     def save_msg_and_stop_service(self):
         if not self.cached_data: 

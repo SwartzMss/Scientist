@@ -45,7 +45,7 @@ def log_and_print(text):
 
 class IntractSign:
     def __init__(self):
-        self.userName = None
+        self.alias = None
         self.account = None
         self.headers = {
             'user-agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
@@ -156,17 +156,17 @@ class IntractSign:
         data = response.json()
         return data
 
-    def run(self,userName, account):
-        self.userName = userName
+    def run(self,alias, account):
+        self.alias = alias
         self.account = account
         try:
             nonce = self.get_nonce()['data']['nonce']
             hex = self._sign_message(nonce)
             data,auth_token = self.wallet(hex)
             self.headers['authorization'] = 'Bearer ' + auth_token
-            log_and_print(f"{userName} login successfully ")
+            log_and_print(f"{alias} login successfully ")
         except Exception as e:
-            log_and_print(f"{userName} login failed: {e}")
+            log_and_print(f"{alias} login failed: {e}")
             return False
 
         try:
@@ -178,12 +178,12 @@ class IntractSign:
         try:
             gm = self.gm()
             if "already done for today" in gm.get('message', ""):
-                log_and_print(f"{userName} gm already done successfully")
-                excel_manager.update_info(username, "already sign successfully")
+                log_and_print(f"{alias} gm already done successfully")
+                excel_manager.update_info(alias, "already sign successfully")
                 return True
             streakCount=gm['streakCount']
-            log_and_print(f"{userName} gm successfully")
-            excel_manager.update_info(username, "sign successfully")
+            log_and_print(f"{alias} gm successfully")
+            excel_manager.update_info(alias, "sign successfully")
             '''
             {'streakCount': 1, 'longestStreakCount': 1, 'streakTimestamp': '2024-01-18T12:41:34.623Z',
              'streakDate': '2024-01-18', 'isFirstTimeMarked': True, 'expiredStreakCount': 0}'''
@@ -192,7 +192,7 @@ class IntractSign:
             {'streakCount': 0, 'expiredStreakCount': 0, 'longestStreakCount': 0, 'isFirstTimeMarked': True}'''
             return True
         except Exception as e:
-            log_and_print(f"{userName} gm failed: {e}")
+            log_and_print(f"{alias} gm failed: {e}")
             return False
 
             
@@ -209,19 +209,18 @@ if __name__ == '__main__':
     failed_list = []
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("IntractSign", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_interact("eth", "IntractSign")
+    credentials_list = UserInfoApp.find_user_credentials_for_eth("IntractSign")
     for credentials in credentials_list:
-        username = credentials["username"]
-        access_token = credentials["access_token"]
+        alias = credentials["alias"]
+        key = credentials["key"]
 
-        account = web3.Account.from_key(access_token)    
-        if(app.run(username, account) == False):
-            failed_list.append((username, account))
+        account = web3.Account.from_key(key)    
+        if(app.run(alias, account) == False):
+            failed_list.append((alias, account))
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")
 
-    for username, failed_list in failed_list:
-        log_and_print(f"final failed username = {username}")
-        excel_manager.update_info(username, "sign failed")
+    for alias, account in failed_list:
+        log_and_print(f"final failed username = {alias}")
     excel_manager.save_msg_and_stop_service()

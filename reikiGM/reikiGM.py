@@ -44,7 +44,7 @@ def log_and_print(text):
 
 class ReikiSign:
     def __init__(self):
-        self.userName = None
+        self.alias = None
         self.account = None
         self.nonce = None
         self.signature = None
@@ -118,41 +118,41 @@ class ReikiSign:
         log_and_print(f"response:{data}")
         return data
 
-    def run(self,userName, account):
-        self.userName = userName
+    def run(self,alias, account):
+        self.alias = alias
         self.account = account
         try:
             response = self.getNonce()
             self.nonce = response['nonce']
-            log_and_print(f"{userName} getNonce successfully ")
+            log_and_print(f"{alias} getNonce successfully ")
         except Exception as e:
-            log_and_print(f"{userName} getNonce failed: {e}")
+            log_and_print(f"{alias} getNonce failed: {e}")
             return False
 
         try:
             self.signature = self.signMessage()
-            log_and_print(f"{userName} signMessage successfully ")
+            log_and_print(f"{alias} signMessage successfully ")
         except Exception as e:
-            log_and_print(f"{userName} signMessage failed: {e}")
+            log_and_print(f"{alias} signMessage failed: {e}")
             return False    
 
         try:
             response = self.postChallenge()
             token = response['extra']['token']
             self.headers['authorization'] = 'Bearer ' + token
-            log_and_print(f"{userName} postChallenge successfully ")
+            log_and_print(f"{alias} postChallenge successfully ")
         except Exception as e:
-            log_and_print(f"{userName} postChallenge failed: {e}")
+            log_and_print(f"{alias} postChallenge failed: {e}")
             return False  
  
         try:
             response = self.checkin()
             if response != True:
                 raise Exception(f"Error: {response}")
-            log_and_print(f"{userName} checkin successfully ")
-            excel_manager.update_info(username, "checkin successfully")
+            log_and_print(f"{alias} checkin successfully ")
+            excel_manager.update_info(alias, "checkin successfully")
         except Exception as e:
-            log_and_print(f"{userName} checkin failed: {e}")
+            log_and_print(f"{alias} checkin failed: {e}")
             return False      
         '''
         try:
@@ -177,19 +177,18 @@ if __name__ == '__main__':
     failed_list = []
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("ReikiSign", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_reiki("eth", "ReikiSign")
+    credentials_list = UserInfoApp.find_user_credentials_for_eth("ReikiSign")
     for credentials in credentials_list:
-        username = credentials["username"]
-        access_token = credentials["access_token"]
+        alias = credentials["alias"]
+        key = credentials["key"]
 
-        account = web3.Account.from_key(access_token)    
-        if(app.run(username, account) == False):
-            failed_list.append((username, account))
+        account = web3.Account.from_key(key)    
+        if(app.run(alias, account) == False):
+            failed_list.append((alias, account))
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")
 
-    for username, failed_list in failed_list:
-        log_and_print(f"final failed username = {username}")
-        excel_manager.update_info(username, "sign failed")
+    for alias, account in failed_list:
+        log_and_print(f"final failed username = {alias}")
     excel_manager.save_msg_and_stop_service()

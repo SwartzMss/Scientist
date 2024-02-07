@@ -88,58 +88,27 @@ class UserInfo:
         except FileNotFoundError:
             self.logger(f"File '{accountfile_path}' not found")
         return None
-
-    def find_user_credentials_for_interact(self, category, exclude=None):
-        credentials_list = []
-        try:
-            with open(self.accountfile_path, 'r') as file:
-                data = json.load(file)
-
-            for user in data["users"]:
-                username = user.get("alias")
-                accounts = user.get("accounts", {})
-                if category in accounts:
-                    account = accounts[category]
-                    # 跳过包含排除项的账户
-                    if exclude is not None and "exception" in account and exclude in account["exception"]:
-                        continue
-                    access_token = account.get("key")
-                    # 如果access_token或refresh_token不存在，可以选择跳过或添加默认值
-                    if access_token is None:
-                        continue  
-
-                    credentials_list.append({"username": username, "access_token": access_token})
-
-        except json.JSONDecodeError:
-            self.logger("Invalid JSON data")
-        except KeyError as e:
-            self.logger(f"Missing key in JSON data: {e}")
-        except FileNotFoundError:
-            self.logger(f"File '{accountfile_path}' not found")
-
-        return credentials_list
     
-    def find_user_credentials_for_reiki(self, category, exclude=None):
+    def find_user_credentials_for_eth(self, exclude=None):
         credentials_list = []
         try:
             with open(self.accountfile_path, 'r') as file:
                 data = json.load(file)
 
             for user in data["users"]:
-                username = user.get("alias")
-                proxy = user.get("proxy")
+                # 跳过包含排除项的账户
+                if exclude is not None and "exception" in user and exclude in user["exception"]:
+                    continue
+                alias = user.get("alias")
                 accounts = user.get("accounts", {})
-                if category in accounts:
-                    account = accounts[category]
-                    # 跳过包含排除项的账户
-                    if exclude is not None and "exception" in account and exclude in account["exception"]:
-                        continue
-                    access_token = account.get("key")
+                if "eth" in accounts:
+                    account = accounts["eth"]
+                    key = account.get("key")
                     # 如果access_token或refresh_token不存在，可以选择跳过或添加默认值
-                    if access_token is None:
+                    if key is None:
                         continue  
 
-                    credentials_list.append({"username": username, "access_token": access_token})
+                    credentials_list.append({"alias": alias, "key": key})
 
         except json.JSONDecodeError:
             self.logger("Invalid JSON data")
@@ -150,7 +119,7 @@ class UserInfo:
 
         return credentials_list
 
-    def find_user_credentials_for_app(self, category, exclude=None):
+    def find_user_credentials_for_app(self, exclude=None):
         credentials_list = []
         try:
             with open(self.accountfile_path, 'r') as file:
@@ -161,12 +130,9 @@ class UserInfo:
                 if exclude is not None and "exception" in user and exclude in user["exception"]:
                     continue
                 alias = user.get("alias")
-
-                username = user.get("alias")
-                proxy = user.get("proxy")
                 accounts = user.get("accounts", {})
-                if category in accounts:
-                    account = accounts[category]
+                if "APP" in accounts:
+                    account = accounts["APP"]
                     index = account.get("index")
                     devid = account.get("devid")
                     # 如果access_token或refresh_token不存在，可以选择跳过或添加默认值

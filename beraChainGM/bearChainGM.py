@@ -65,61 +65,61 @@ class bearChainGM:
 
 
 
-    def run(self, userName, access_token):
-        address = web3.Account.from_key(access_token).address 
+    def run(self, alias, key):
+        address = web3.Account.from_key(key).address 
         try:
             # 尝试登录
             try:
                 self.login()    
-                log_and_print(f"{userName} login succeed.")
+                log_and_print(f"{alias} login succeed.")
             except WebDriverException as e:
-                log_and_print(f"{userName} login failed : {e}")
+                log_and_print(f"{alias} login failed : {e}")
                 return False
 
             # 各步骤尝试操作，增加日志记录
             try:
                 button = self.driver.find_element(By.XPATH, "//*[@id='terms']")
                 button.click()
-                log_and_print(f"{userName} Terms button clicked.")
+                log_and_print(f"{alias} Terms button clicked.")
                 time.sleep(3)
             except NoSuchElementException:
-                log_and_print(f"{userName} Terms button not found.")
+                log_and_print(f"{alias} Terms button not found.")
                 return False
 
             try:
                 button = self.driver.find_element(By.XPATH, "//button[contains(text(), 'I AGREE')]")
                 button.click()
-                log_and_print(f"{userName} I AGREE' button clicked.")
+                log_and_print(f"{alias} I AGREE' button clicked.")
                 time.sleep(3)
             except NoSuchElementException:
-                log_and_print(f"{userName} I AGREE' button not found.")
+                log_and_print(f"{alias} I AGREE' button not found.")
                 return False
 
             try:
                 input_element = self.driver.find_element(By.XPATH, "//div[@class='relative w-full']/input")
                 input_element.send_keys(address)
-                log_and_print(f"{userName} Address input successful.")
+                log_and_print(f"{alias} Address input successful.")
                 time.sleep(3)
             except NoSuchElementException:
-                log_and_print(f"{userName} Address input field not found.")
+                log_and_print(f"{alias} Address input field not found.")
                 return False
 
             try:
                 button = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Click here to prove you are not a bot')]")
                 button.click()
-                log_and_print(f"{userName} 'Prove not a bot' button clicked.")
+                log_and_print(f"{alias} 'Prove not a bot' button clicked.")
                 time.sleep(3)
             except NoSuchElementException:
-                log_and_print(f"{userName} 'Prove not a bot' button not found.")
+                log_and_print(f"{alias} 'Prove not a bot' button not found.")
                 return False
 
             try:
                 button = self.driver.find_element(By.XPATH, "//button[contains(text(), 'Drip Tokens')]")
                 button.click()
-                log_and_print(f"{userName} 'Drip Tokens' button clicked.")
-                time.sleep(5)
+                log_and_print(f"{alias} 'Drip Tokens' button clicked.")
+                time.sleep(3)
             except NoSuchElementException:
-                log_and_print(f"{userName} 'Drip Tokens' button not found.")
+                log_and_print(f"{alias} 'Drip Tokens' button not found.")
                 return False
 
             try:
@@ -127,8 +127,8 @@ class bearChainGM:
                 if element:
                     bera_transfer = BerachainBatchTransfer(private_key=access_token)
                     balance = bera_transfer.get_balance()
-                    log_and_print(f"{userName}: {element.text} and balance = {balance}")
-                    excel_manager.update_info(username,  f"{element.text} and balance = {balance}")
+                    log_and_print(f"{alias}: {element.text} and balance = {balance}")
+                    excel_manager.update_info(alias,  f"{element.text} and balance = {balance}")
                 #grey_listed_elements = self.driver.find_elements(By.XPATH, "//h5[contains(text(), 'Grey-listed for 8 hours')]")
                 #submitted_elements = self.driver.find_elements(By.XPATH, "//h5[contains(text(), 'Request Submitted')]")
                 # if grey_listed_elements:
@@ -138,11 +138,11 @@ class bearChainGM:
                 #     log_and_print(f"{userName} Operation successful: Request Submitted.")
                 #     excel_manager.update_info(username, "Operation successful: Request Submitted.")
                 else:
-                     log_and_print(f"{userName} Status unknown.")
-                     excel_manager.update_info(username, "Operation failed: Status unknown.")
+                     log_and_print(f"{alias} Status unknown.")
+                     excel_manager.update_info(alias, "Operation failed: Status unknown.")
 
             except WebDriverException:
-                log_and_print(f"{userName}Error checking operation status.")
+                log_and_print(f"{alias}Error checking operation status.")
                 return False
 
         finally:
@@ -159,25 +159,24 @@ if __name__ == "__main__":
     failed_list = []
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("bearChainGM", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_interact("eth", "bearChainGM")
+    credentials_list = UserInfoApp.find_user_credentials_for_eth("bearChainGM")
 
     for credentials in credentials_list:
-        username = credentials["username"]
-        access_token = credentials["access_token"]
-        proxyName = UserInfoApp.find_proxy_by_alias_in_file(username)
+        alias = credentials["alias"]
+        key = credentials["key"]
+        proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
         if proxyName== None:
-            log_and_print(f"cannot find proxy username = {username}")
+            log_and_print(f"cannot find proxy username = {alias}")
             continue
         proxyApp.change_proxy(proxyName)
         time.sleep(5)   
-        if(app.run(username, access_token) == False):
-            failed_list.append(username)
+        if(app.run(alias, key) == False):
+            failed_list.append(alias)
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")
 
-    for username in failed_list:
-        log_and_print(f"final failed username = {username}")
-        excel_manager.update_info(username, "sign failed")
+    for alias in failed_list:
+        log_and_print(f"final failed username = {alias}")
     excel_manager.save_msg_and_stop_service()
     proxyApp.change_proxy("🇭🇰 HK | 香港 01")

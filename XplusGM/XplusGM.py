@@ -41,7 +41,7 @@ def log_and_print(text):
 class XplusGM:
     def __init__(self, app_package, app_activity):
         self.device_name = None
-        self.username = None
+        self.alias = None
         self.index = 100
         self.app_package = app_package
         self.app_activity = app_activity
@@ -58,7 +58,7 @@ class XplusGM:
         """关闭指定索引号的雷电模拟器实例"""
         command = f'"E:\\leidian\\LDPlayer9\\dnconsole.exe" quit --index {self.index}'
         subprocess.Popen(command, shell=True)
-        log_and_print(f"Closing LDPlayer username={self.username}...")
+        log_and_print(f"Closing LDPlayer username={self.alias}...")
 
     def is_emulator_ready(self, emulator_name):
         """检查模拟器是否准备就绪"""
@@ -106,49 +106,54 @@ class XplusGM:
             self.driver.quit()
             log_and_print("Appium session ended.")
 
-    def run(self, username, index, device_name):
+    def run(self, alias, index, device_name):
         self.device_name = device_name
-        self.username = username
+        self.alias = alias
         self.index = index
         error_occurred = False
 
         try:
             try:
                 self.start_ldplayer()
-                log_and_print(f"{username} start_ldplayer successfully")
+                log_and_print(f"{alias} start_ldplayer successfully")
             except Exception as e:
-                log_and_print(f"{username} start_ldplayer failed: {e}")
+                log_and_print(f"{alias} start_ldplayer failed: {e}")
+                excel_manager.update_info(alias, f"start_ldplayer failed: {e}")
                 error_occurred = True
 
             if not error_occurred:
                 try:
                     self.wait_for_emulator()
-                    log_and_print(f"{username} wait_for_emulator successfully")
+                    log_and_print(f"{alias} wait_for_emulator successfully")
                 except Exception as e:
-                    log_and_print(f"{username} wait_for_emulator failed: {e}")
+                    log_and_print(f"{alias} wait_for_emulator failed: {e}")
+                    excel_manager.update_info(alias, f"wait_for_emulator failed: {e}")
                     error_occurred = True
 
             if not error_occurred:
                 try:
                     self.connect_to_appium()
-                    log_and_print(f"{username} connect_to_appium successfully")
+                    log_and_print(f"{alias} connect_to_appium successfully")
                 except Exception as e:
-                    log_and_print(f"{username} connect_to_appium failed: {e}")
+                    log_and_print(f"{alias} connect_to_appium failed: {e}")
+                    excel_manager.update_info(alias, f"connect_to_appium failed: {e}")
                     error_occurred = True
 
             if self.find_and_click_element('//android.widget.Button[@text="領取"]') == True:
                 self.find_and_click_element('//android.widget.Image[@text="17EZJMxGT442BvgHrTnaL9xn22vlf1U8xA6wjaEq2oFqOWbOsBwZg7QYwCw8bCIAzQ6SGSQACABQAKABAABQPARXepnFZhDV3JOXwVyCVVktUGNUivVbH2HFxIWEt2bwZqlAAAAAElFTkSuQmCC"]')
                 if self.find_and_click_element('//android.widget.Button[@text="開啟挖礦"]') == True:
-                    log_and_print(f"recheck successfully: {self.username}")
-                    excel_manager.update_info(self.username, "recheck successfully")
+                    log_and_print(f"recheck successfully: {self.alias}")
+                    excel_manager.update_info(self.alias, "recheck successfully")
             else:
-                log_and_print(f"not need sign rightb now: {self.username}")
-                excel_manager.update_info(self.username, "not need sign rightb now")
+                log_and_print(f"not need sign rightb now: {self.alias}")
+                excel_manager.update_info(self.alias, "not need sign rightb now")
         finally:
-            # Regardless of what happened above, try to clean up.
-            self.cleanup_resources(username, error_occurred)
+            self.cleanup_resources()
+            if error_occurred:
+                return False
+            return True
 
-    def cleanup_resources(self, username, error_occurred):
+    def cleanup_resources(self):
         time.sleep(3)  # 等待一些操作完成
         self.quit()
         time.sleep(1)
@@ -160,19 +165,19 @@ if __name__ == "__main__":
 
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("XplusGM", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_app("AZC", "XplusGM")
+    credentials_list = UserInfoApp.find_user_credentials_for_app("XplusGM")
     app = XplusGM( "com.xplus.wallet", ".MainActivity")
     failed_list = []
     for credentials in credentials_list:
-        username = credentials["username"]
+        alias = credentials["alias"]
         index = credentials["index"]
         devid = credentials["devid"]
-        if(app.run(username, index,devid) == False):
-            failed_list.append((username))
+        if(app.run(alias, index,devid) == False):
+            failed_list.append(alias)
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")
 
-    for username in failed_list:
-        log_and_print(f"final failed username = {username}")
+    for alias in failed_list:
+        log_and_print(f"final failed username = {alias}")
     excel_manager.save_msg_and_stop_service()  

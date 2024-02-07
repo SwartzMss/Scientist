@@ -23,7 +23,7 @@ from tools.excelWorker import excelWorker
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
-log_file_path = rf'\\192.168.3.142\SuperWind\Study\AZC_{current_time}.log'
+log_file_path = rf'\\192.168.3.142\SuperWind\Study\AZCGM_{current_time}.log'
 
 
 def log_message(text):
@@ -41,7 +41,7 @@ def log_and_print(text):
 class AZCGM:
     def __init__(self, app_package, app_activity):
         self.device_name = None
-        self.username = None
+        self.alias = None
         self.index = 100
         self.app_package = app_package
         self.app_activity = app_activity
@@ -58,7 +58,7 @@ class AZCGM:
         """关闭指定索引号的雷电模拟器实例"""
         command = f'"E:\\leidian\\LDPlayer9\\dnconsole.exe" quit --index {self.index}'
         subprocess.Popen(command, shell=True)
-        log_and_print(f"Closing LDPlayer username={self.username}...")
+        log_and_print(f"Closing LDPlayer alias={self.alias}...")
 
     def is_emulator_ready(self, emulator_name):
         """检查模拟器是否准备就绪"""
@@ -125,76 +125,83 @@ class AZCGM:
             self.driver.quit()
             log_and_print("Appium session ended.")
 
-    def run(self, username, index, device_name):
+    def run(self, alias, index, device_name):
         self.device_name = device_name
-        self.username = username
+        self.alias = alias
         self.index = index
         error_occurred = False
 
         try:
             try:
                 self.start_ldplayer()
-                log_and_print(f"{username} start_ldplayer successfully")
+                log_and_print(f"{alias} start_ldplayer successfully")
             except Exception as e:
-                log_and_print(f"{username} start_ldplayer failed: {e}")
+                log_and_print(f"{alias} start_ldplayer failed: {e}")
+                excel_manager.update_info(self.alias, f"start_ldplayer failed: {e} ")
                 error_occurred = True
 
             if not error_occurred:
                 try:
                     self.wait_for_emulator()
-                    log_and_print(f"{username} wait_for_emulator successfully")
+                    log_and_print(f"{alias} wait_for_emulator successfully")
                 except Exception as e:
-                    log_and_print(f"{username} wait_for_emulator failed: {e}")
+                    log_and_print(f"{alias} wait_for_emulator failed: {e}")
+                    excel_manager.update_info(self.alias, f"wait_for_emulator failed: {e} ")
                     error_occurred = True
 
             if not error_occurred:
                 try:
                     self.connect_to_appium()
-                    log_and_print(f"{username} connect_to_appium successfully")
+                    log_and_print(f"{alias} connect_to_appium successfully")
                 except Exception as e:
-                    log_and_print(f"{username} connect_to_appium failed: {e}")
+                    log_and_print(f"{alias} connect_to_appium failed: {e}")
+                    excel_manager.update_info(self.alias, f"connect_to_appium failed: {e} ")
                     error_occurred = True
 
             if not error_occurred:
                 if self.find_and_click_element('//android.view.ViewGroup[@text="确认"]') == True:
-                    log_and_print(f"{username} some error occurred alreay confirmed")
+                    log_and_print(f"{alias} some error occurred alreay confirmed")
                 if self.find_element('//android.widget.TextView[@text="AZC"]') == True:
-                    log_and_print(f"already GM: {self.username}")
-                    excel_manager.update_info(self.username, "already GM ")
+                    log_and_print(f"already GM: {self.alias}")
+                    excel_manager.update_info(self.alias, "already GM ")
                 else:
                     isrelogin = None
                     if self.find_and_click_element('//android.widget.TextView[@text="登录或注册"]')  == True:
-                        usrName, passWd = UserInfoApp.find_username_and_password_by_alias_in_file(username)
-                        self.find_and_input_element('//android.widget.EditText[@text="Example@gmail.com"]', usrName)
+                        username, passWord = UserInfoApp.find_username_and_password_by_alias_in_file(alias)
+                        self.find_and_input_element('//android.widget.EditText[@text="Example@gmail.com"]', username)
                         time.sleep(1)
                         self.find_and_input_element('//android.widget.EditText[@text="密码"]', "*Ab910220a")
                         time.sleep(1)
                         self.find_and_click_element('//android.widget.TextView[@text="登录"]')
                         time.sleep(1)
                         if self.find_and_click_element('//android.view.ViewGroup[@text="确认"]') == True:
-                            log_and_print(f"{username} some error occurred alreay confirmed")
+                            log_and_print(f"{alias} some error occurred alreay confirmed")
                             self.find_and_click_element('//android.widget.TextView[@text="登录"]')
                             time.sleep(1)
-                        log_and_print(f"{username} seesion expired ,need relogin")
+                        log_and_print(f"{alias} seesion expired ,need relogin")
                         isrelogin = False
                     if self.find_and_click_element('//android.widget.TextView[@text="连接"]') == True:
                         if isrelogin == False:
                             isrelogin = True
-                        log_and_print(f"recheck successfully: {self.username} isrelogin = {isrelogin}")
-                        excel_manager.update_info(self.username, f"recheck successfully isrelogin = {isrelogin}")
+                        log_and_print(f"recheck successfully: {self.alias} isrelogin = {isrelogin}")
+                        excel_manager.update_info(self.alias, f"recheck successfully isrelogin = {isrelogin}")
                     else:
                         if self.find_element('//android.widget.TextView[@text="AZC"]') == True:
-                            log_and_print(f"already GM: {self.username}")
-                            excel_manager.update_info(self.username, "already GM ")
+                            log_and_print(f"already GM: {self.alias}")
+                            excel_manager.update_info(self.alias, "already GM ")
                         else:
-                            log_and_print(f"relogin failed: {self.username}")
-                            excel_manager.update_info(self.username, "relogin failed")
+                            log_and_print(f"relogin failed: {self.alias}")
+                            excel_manager.update_info(self.alias, "relogin failed")
+                            error_occurred = True
 
         finally:
             # Regardless of what happened above, try to clean up.
-            self.cleanup_resources(username, error_occurred)
+            self.cleanup_resources()
+            if error_occurred:
+                return False
+            return True
 
-    def cleanup_resources(self, username, error_occurred):
+    def cleanup_resources(self):
         time.sleep(3)  # 等待一些操作完成
         self.quit()
         time.sleep(1)
@@ -205,12 +212,12 @@ class AZCGM:
 if __name__ == "__main__":
 
     UserInfoApp = UserInfo(log_and_print)
-    excel_manager = excelWorker("AZC", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_app("AZC", "AZCGM")
+    excel_manager = excelWorker("AZCGM", log_and_print)
+    credentials_list = UserInfoApp.find_user_credentials_for_app("AZCGM")
     app = AZCGM( "com.azc.azcoiner", ".SplashActivity")
     failed_list = []
     for credentials in credentials_list:
-        alias = credentials["username"]
+        alias = credentials["alias"]
         index = credentials["index"]
         devid = credentials["devid"]
         if(app.run(alias, index,devid) == False):
