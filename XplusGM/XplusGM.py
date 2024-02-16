@@ -139,14 +139,20 @@ class XplusGM:
                     excel_manager.update_info(alias, f"connect_to_appium failed: {e}")
                     error_occurred = True
 
-            if self.find_and_click_element('//android.widget.Button[@text="領取"]') == True:
-                self.find_and_click_element('//android.widget.Image[@text="17EZJMxGT442BvgHrTnaL9xn22vlf1U8xA6wjaEq2oFqOWbOsBwZg7QYwCw8bCIAzQ6SGSQACABQAKABAABQPARXepnFZhDV3JOXwVyCVVktUGNUivVbH2HFxIWEt2bwZqlAAAAAElFTkSuQmCC"]')
+            if not error_occurred:
+                if self.find_and_click_element('//android.widget.Button[@text="領取"]') == True:
+                    log_and_print(f"claimed successfully: {self.alias}")
+                    if False == self.find_and_click_element('//android.widget.Image[@text="17EZJMxGT442BvgHrTnaL9xn22vlf1U8xA6wjaEq2oFqOWbOsBwZg7QYwCw8bCIAzQ6SGSQACABQAKABAABQPARXepnFZhDV3JOXwVyCVVktUGNUivVbH2HFxIWEt2bwZqlAAAAAElFTkSuQmCC"]'):
+                        log_and_print(f"find exit claim failed: {self.alias}")
+                        excel_manager.update_info(self.alias, "find exit claim failed")
+                        error_occurred = True
+            if not error_occurred:
                 if self.find_and_click_element('//android.widget.Button[@text="開啟挖礦"]') == True:
                     log_and_print(f"recheck successfully: {self.alias}")
                     excel_manager.update_info(self.alias, "recheck successfully")
-            else:
-                log_and_print(f"not need sign rightb now: {self.alias}")
-                excel_manager.update_info(self.alias, "not need sign rightb now")
+                else:
+                    log_and_print(f"not need sign rightb now: {self.alias}")
+                    excel_manager.update_info(self.alias, "not need sign rightb now")
         finally:
             self.cleanup_resources()
             if error_occurred:
@@ -167,11 +173,19 @@ if __name__ == "__main__":
     excel_manager = excelWorker("XplusGM", log_and_print)
     credentials_list = UserInfoApp.find_user_credentials_for_app("XplusGM")
     app = XplusGM( "com.xplus.wallet", ".MainActivity")
-    failed_list = []
+    retry_list = []
     for credentials in credentials_list:
         alias = credentials["alias"]
         index = credentials["index"]
         devid = credentials["devid"]
+        if(app.run(alias, index,devid) == False):
+            retry_list.append(alias, index,devid)
+
+    if len(retry_list) != 0:
+        log_and_print("start retry faile case")
+
+    failed_list = []
+    for alias, index, devid in retry_list:
         if(app.run(alias, index,devid) == False):
             failed_list.append(alias)
 
