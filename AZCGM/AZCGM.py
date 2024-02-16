@@ -75,8 +75,8 @@ class AZCGM:
             time.sleep(5)
         log_and_print("Emulator is ready.")
 
-    def connect_to_appium(self):
-        """连接到Appium服务并启动应用"""
+    def connect_to_appium(self, retry_limit=3, retry_delay=5):
+        """连接到Appium服务并启动应用，带重试逻辑"""
         desired_caps = {
             'platformName': 'Android',
             'platformVersion': '9',
@@ -87,8 +87,19 @@ class AZCGM:
             'automationName': 'UiAutomator2',
             'newCommandTimeout': 6000,
         }
-        self.driver = webdriver.Remote("http://localhost:4723/wd/hub", desired_caps)
-        log_and_print("Connected to Appium.")
+        
+        attempts = 0
+        while attempts < retry_limit:
+            try:
+                self.driver = webdriver.Remote("http://localhost:4723/wd/hub", desired_caps)
+                log_and_print("Connected to Appium.")
+                return  # 成功连接后退出函数
+            except WebDriverException as e:
+                log_and_print(f"Attempt {attempts + 1} failed to connect to Appium: {e}")
+                attempts += 1
+                time.sleep(retry_delay)
+        
+        raise Exception("Failed to connect to Appium after multiple attempts.")
 
     def find_and_click_element(self, xpath, timeout=5):
         """查找元素并点击"""
@@ -159,40 +170,35 @@ class AZCGM:
                     error_occurred = True
 
             if not error_occurred:
-                if self.find_and_click_element('//android.view.ViewGroup[@text="确认"]') == True:
-                    log_and_print(f"{alias} some error occurred alreay confirmed")
                 if self.find_element('//android.widget.TextView[@text="AZC"]') == True:
                     log_and_print(f"already GM: {self.alias}")
                     excel_manager.update_info(self.alias, "already GM ")
-                else:
-                    isrelogin = None
-                    if self.find_and_click_element('//android.widget.TextView[@text="登录或注册"]')  == True:
-                        username, passWord = UserInfoApp.find_username_and_password_by_alias_in_file(alias)
-                        self.find_and_input_element('//android.widget.EditText[@text="Example@gmail.com"]', username)
-                        time.sleep(1)
-                        self.find_and_input_element('//android.widget.EditText[@text="密码"]', "*Ab910220a")
-                        time.sleep(1)
-                        self.find_and_click_element('//android.widget.TextView[@text="登录"]')
-                        time.sleep(1)
-                        if self.find_and_click_element('//android.view.ViewGroup[@text="确认"]') == True:
-                            log_and_print(f"{alias} some error occurred alreay confirmed")
-                            self.find_and_click_element('//android.widget.TextView[@text="登录"]')
-                            time.sleep(1)
-                        log_and_print(f"{alias} seesion expired ,need relogin")
-                        isrelogin = False
+                elif self.find_and_click_element('//android.widget.TextView[@text="连接"]') == True:
+                    log_and_print(f"recheck successfully: {self.alias}")
+                    excel_manager.update_info(self.alias, f"recheck successfully")
+                elif self.find_and_click_element('//android.widget.TextView[@text="登录或注册"]')  == True:
+                    username, passWord = UserInfoApp.find_username_and_password_by_alias_in_file(alias)
+                    self.find_and_input_element('//android.widget.EditText[@text="Example@gmail.com"]', username)
+                    time.sleep(1)
+                    self.find_and_input_element('//android.widget.EditText[@text="密码"]', "*Ab910220a")
+                    time.sleep(1)
+                    self.find_and_click_element('//android.widget.TextView[@text="登录"]')
+                    time.sleep(1)
+                    log_and_print(f"{alias} seesion expired ,need relogin")
                     if self.find_and_click_element('//android.widget.TextView[@text="连接"]') == True:
-                        if isrelogin == False:
-                            isrelogin = True
-                        log_and_print(f"recheck successfully: {self.alias} isrelogin = {isrelogin}")
-                        excel_manager.update_info(self.alias, f"recheck successfully isrelogin = {isrelogin}")
+                        log_and_print(f"recheck successfully: {self.alias} relogin succeed")
+                        excel_manager.update_info(self.alias, f"recheck successfully relogin succeed")
+                    elif self.find_element('//android.widget.TextView[@text="AZC"]') == True:
+                        log_and_print(f"already GM: {self.alias} ,relogin succeed")
+                        excel_manager.update_info(self.alias, "already GM ,relogin succeed")
                     else:
-                        if self.find_element('//android.widget.TextView[@text="AZC"]') == True:
-                            log_and_print(f"already GM: {self.alias}")
-                            excel_manager.update_info(self.alias, "already GM ")
-                        else:
-                            log_and_print(f"relogin failed: {self.alias}")
-                            excel_manager.update_info(self.alias, "relogin failed")
-                            error_occurred = True
+                        log_and_print(f"relogin failed: {self.alias}")
+                        excel_manager.update_info(self.alias, "relogin failed")
+                        error_occurred = True
+                else:
+                    log_and_print(f"somehting went wrong : {self.alias}")
+                    excel_manager.update_info(self.alias, "somehting went wrong")
+                    error_occurred = True
 
         finally:
             # Regardless of what happened above, try to clean up.
@@ -215,13 +221,21 @@ if __name__ == "__main__":
     excel_manager = excelWorker("AZCGM", log_and_print)
     credentials_list = UserInfoApp.find_user_credentials_for_app("AZCGM")
     app = AZCGM( "com.azc.azcoiner", ".SplashActivity")
+    retry_list = [] 
     failed_list = []
     for credentials in credentials_list:
         alias = credentials["alias"]
         index = credentials["index"]
         devid = credentials["devid"]
         if(app.run(alias, index,devid) == False):
-            failed_list.append((alias))
+            retry_list.append((alias,index,devid))
+
+    if len(retry_list) != 0:
+        log_and_print("start retry faile case")
+
+    for alias, index, devid in retry_list:
+        if(app.run(alias, index, devid) == False):
+            failed_list.append(alias)
 
     if len(failed_list) == 0:
         log_and_print(f"so lucky all is signed")

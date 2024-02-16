@@ -237,7 +237,7 @@ if __name__ == '__main__':
 
 
     if len(retry_list) != 0:
-        log_and_print("start retry faile cause")
+        log_and_print("start retry faile case")
         time.sleep(60)
     failed_list = []
     for alias, username, access_token, refresh_token in retry_list:

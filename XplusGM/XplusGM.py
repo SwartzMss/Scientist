@@ -75,8 +75,8 @@ class XplusGM:
             time.sleep(5)
         log_and_print("Emulator is ready.")
 
-    def connect_to_appium(self):
-        """连接到Appium服务并启动应用"""
+    def connect_to_appium(self, retry_limit=3, retry_delay=5):
+        """连接到Appium服务并启动应用，带重试逻辑"""
         desired_caps = {
             'platformName': 'Android',
             'platformVersion': '9',
@@ -87,8 +87,20 @@ class XplusGM:
             'automationName': 'UiAutomator2',
             'newCommandTimeout': 6000,
         }
-        self.driver = webdriver.Remote("http://localhost:4723/wd/hub", desired_caps)
-        log_and_print("Connected to Appium.")
+        
+        attempts = 0
+        while attempts < retry_limit:
+            try:
+                self.driver = webdriver.Remote("http://localhost:4723/wd/hub", desired_caps)
+                log_and_print("Connected to Appium.")
+                return  # 成功连接后退出函数
+            except WebDriverException as e:
+                log_and_print(f"Attempt {attempts + 1} failed to connect to Appium: {e}")
+                attempts += 1
+                time.sleep(retry_delay)
+        
+        raise Exception("Failed to connect to Appium after multiple attempts.")
+
 
     def find_and_click_element(self, xpath, timeout=5):
         """查找元素并点击"""
