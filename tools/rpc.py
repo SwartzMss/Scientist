@@ -1,5 +1,7 @@
 import requests
-
+from requests.exceptions import SSLError
+import math
+import time
 headers = {
     'Content-Type': 'application/json',
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
@@ -64,9 +66,15 @@ class Rpc:
 
     def get_balance(self, address):
         """获取余额"""
-        data = {"jsonrpc":"2.0","method":"eth_getBalance","params":[address, 'latest'],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-        return res.json()#(int(res.json()['result'], 16)) / math.pow(10,18)
+        data = {"jsonrpc": "2.0", "method": "eth_getBalance", "params": [address, 'latest'], "id": 1}
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+            return res.json()  # (int(res.json()['result'], 16)) / math.pow(10, 18)
+        except SSLError as e:
+            print(f"SSL Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def get_code(self, address, block="latest"):
         block = hex(block) if isinstance(block, int) else block

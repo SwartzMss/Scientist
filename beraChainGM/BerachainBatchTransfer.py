@@ -42,6 +42,8 @@ class BerachainBatchTransfer:
     def get_balance(self):
         """获取指定地址的BERA余额."""
         balance_result = self.rpc.get_balance(self.account.address)
+        if balance_result == None:
+            return None
         balance_wei = int(balance_result['result'], 16)
         balance_bera = self.web3.from_wei(balance_wei, 'ether')
         return Decimal(balance_bera)
@@ -94,6 +96,7 @@ if __name__ == "__main__":
         log_and_print(f"alias {alias}, balance: {balance}")
         if balance <= Decimal("0.02"):
             log_and_print(f"alias {alias}, too less balance skipped")
+            time.sleep(2)
             continue
         tx_hash = bera_transfer.send_transaction(balance - Decimal("0.01"))
         log_and_print(f"alias {alias}, 交易哈希: {tx_hash}")
