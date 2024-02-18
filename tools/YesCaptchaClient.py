@@ -37,15 +37,20 @@ class YesCaptchaClient:
             "taskId": task_id
         }
         while True:
-            response = requests.post(url, json=params)
-            result = response.json()
-            self.logger(f'get_task_result response: {result}')
-            if result['status'] == 'ready':
-                return result
-            elif result['status'] == 'processing':
-                time.sleep(6)  # 等待6秒再次查询
-            else:
-                raise Exception("Unexpected task status")
+            try:
+                response = requests.post(url, json=params)
+                result = response.json()
+                self.logger(f'get_task_result response: {result}')
+                if result['status'] == 'ready':
+                    return result
+                elif result['status'] == 'processing':
+                    time.sleep(6)  # 等待6秒再次查询
+                else:
+                    raise Exception("Unexpected task status")
+            except SSLError as e:
+                print(f"SSL Error: {e}")
+                time.sleep(6)
+
 
     def get_recaptcha_token(self, website_url, website_key, task_type):
         task_response = self.create_task(website_url, website_key, task_type)
