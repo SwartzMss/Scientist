@@ -166,9 +166,10 @@ class XplusGM:
                     log_and_print(f"not need sign rightb now: {self.alias}")
                     excel_manager.update_info(self.alias, "not need sign rightb now")
         finally:
-            self.cleanup_resources()
             if error_occurred:
+                self.close_ldplayer()
                 return False
+            self.cleanup_resources()
             return True
 
     def cleanup_resources(self):

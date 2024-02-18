@@ -202,9 +202,10 @@ class AZCGM:
 
         finally:
             # Regardless of what happened above, try to clean up.
-            self.cleanup_resources()
             if error_occurred:
+                self.close_ldplayer()
                 return False
+            self.cleanup_resources()
             return True
 
     def cleanup_resources(self):

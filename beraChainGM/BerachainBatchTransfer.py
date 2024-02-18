@@ -94,6 +94,7 @@ if __name__ == "__main__":
         bera_transfer = BerachainBatchTransfer(private_key=key)
         balance = bera_transfer.get_balance()
         log_and_print(f"alias {alias}, balance: {balance}")
+        continue # 这边只是check balance
         if balance <= Decimal("0.02"):
             log_and_print(f"alias {alias}, too less balance skipped")
             time.sleep(2)

@@ -74,13 +74,14 @@ class bearGM:
         task_type = 'TurnstileTaskProxyless'
 
         address = web3.Account.from_key(key).address 
-        captcha_client = YesCaptchaClient()
+        captcha_client = YesCaptchaClient(logger = log_and_print)
         try:
             recaptcha_token = captcha_client.get_recaptcha_token(website_url, website_key, task_type)
             self.headers['authorization'] = 'Bearer ' + recaptcha_token
 
         except Exception as e:
             log_and_print(f"get_recaptcha_token Error: {e}")
+            excel_manager.update_info(alias,  f"Error {e}")
             return False
 
         response = self.claimAddressCode(address)
