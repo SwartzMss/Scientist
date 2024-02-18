@@ -72,7 +72,7 @@ class ReikiSign:
         }
         log_and_print(f"address:{self.account.address}")
         response = session.post(
-            url, headers=self.headers,json=data, timeout=60)
+            url, headers=self.headers,json=data, timeout=10)
         data = response.json()
         #log_and_print(f"response:{data}")
         return data
@@ -95,7 +95,7 @@ class ReikiSign:
             "signature": self.signature
         }
         response = session.post(
-            url, headers=self.headers,json=data, timeout=60)
+            url, headers=self.headers,json=data, timeout=10)
         data = response.json()
         log_and_print(f"response:{data}")
         return data
@@ -105,7 +105,7 @@ class ReikiSign:
         current_date = datetime.utcnow().date().isoformat()
         url = f"https://reiki.web3go.xyz/api/checkin?day={current_date}"
         response = session.put(
-            url, headers=self.headers, timeout=60)
+            url, headers=self.headers, timeout=10)
         data = response.json()
         log_and_print(f"response:{data}")
         return data
@@ -113,7 +113,7 @@ class ReikiSign:
     def checkResult(self):
         url = f"https://reiki.web3go.xyz/api/GoldLeaf/me"
         response = session.get(
-            url, headers=self.headers, timeout=60)
+            url, headers=self.headers, timeout=10)
         data = response.json()
         log_and_print(f"response:{data}")
         return data

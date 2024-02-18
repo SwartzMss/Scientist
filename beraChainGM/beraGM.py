@@ -60,9 +60,10 @@ class bearGM:
         self.session = requests.Session()
 
     def claimAddressCode(self, address):
+        log_and_print(f"start claimAddressCode")
         form_data = {'address': address}
         url = f"https://artio-80085-faucet-api-cf.berachain.com/api/claim"
-        response = self.session.post(url,json=form_data, headers=self.headers, timeout=60)
+        response = self.session.post(url,json=form_data, headers=self.headers, timeout=10)
         data = response.json()
         log_and_print(f"response:{response}")
         return data
@@ -78,9 +79,9 @@ class bearGM:
         try:
             recaptcha_token = captcha_client.get_recaptcha_token(website_url, website_key, task_type)
             self.headers['authorization'] = 'Bearer ' + recaptcha_token
-
+            log_and_print(f"{alias} get_recaptcha_token succeed")
         except Exception as e:
-            log_and_print(f"get_recaptcha_token Error: {e}")
+            log_and_print(f"{alias} get_recaptcha_token Error: {e}")
             excel_manager.update_info(alias,  f"Error {e}")
             return False
 

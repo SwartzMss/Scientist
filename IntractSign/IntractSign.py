@@ -71,7 +71,7 @@ class IntractSign:
             "walletAddress": self.account.address
         }
         response = session.post(
-            url,json=data, timeout=60)
+            url,json=data, timeout=10)
         data = response.json()
         return data
 
@@ -84,7 +84,7 @@ class IntractSign:
 
     def gm(self):
         url = f"https://api.intract.io/api/qv1/auth/gm-streak"
-        response = session.post(url, headers=self.headers, timeout=60)
+        response = session.post(url, headers=self.headers, timeout=10)
         data = response.json()
         #log_and_print(f"data {data} ")
         return data
@@ -132,7 +132,7 @@ class IntractSign:
             "referralSource": None
         }
         response = session.post(
-            url,json=data, timeout=60)
+            url,json=data, timeout=10)
         set_cookie_string = response.headers.get('set-cookie')
         start = set_cookie_string.find("auth-token=")
         if start != -1:
@@ -152,7 +152,7 @@ class IntractSign:
             "referralSource": "REFERRAL_PAGE"
         }
         response = session.post(
-            url, headers=self.headers,json=data, timeout=60)
+            url, headers=self.headers,json=data, timeout=10)
         data = response.json()
         return data
 

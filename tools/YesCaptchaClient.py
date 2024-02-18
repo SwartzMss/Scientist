@@ -1,6 +1,7 @@
 import requests
 import time
 import datetime
+from requests.exceptions import SSLError
 def log_message(text):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return f"{timestamp} - {text}"

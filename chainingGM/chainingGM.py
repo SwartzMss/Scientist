@@ -62,7 +62,7 @@ class ChainingGM:
 
     def getpoints(self):
         url = f"https://api.chainingview.io/api/user/myDetails/userEnergyCount"
-        response = self.session.get(url, headers=self.headers, timeout=60)
+        response = self.session.get(url, headers=self.headers, timeout=10)
         response = response.json()
         #log_and_print(f"response:{response}")
         return response
@@ -74,14 +74,14 @@ class ChainingGM:
             "dynamicCode": code
         }
         response = self.session.post(
-            url,json=data, timeout=60)
+            url,json=data, timeout=10)
         data = response.json()
         #log_and_print(f"response:{response}")
         return data
 
     def getMyDetails(self):
         url = f"https://api.chainingview.io/api/user/myDetails/getMyDetails"
-        response = self.session.get(url, headers=self.headers, timeout=60)
+        response = self.session.get(url, headers=self.headers, timeout=10)
         response = response.json()
         #log_and_print(f"response:{response}")
         return response
@@ -89,7 +89,7 @@ class ChainingGM:
 
     def getcount(self):
         url = f"https://api.chainingview.io/api/user/userMission/count"
-        response = self.session.get(url, headers=self.headers, timeout=60)
+        response = self.session.get(url, headers=self.headers, timeout=10)
         response = response.json()
         #log_and_print(f"response:{response}")
         return response
@@ -98,14 +98,14 @@ class ChainingGM:
     def countdown(self):
         url = f"https://api.chainingview.io/api/user/config/countdown"
         form_data = {}
-        response = self.session.post(url,data=form_data, headers=self.headers, timeout=60)
+        response = self.session.post(url,data=form_data, headers=self.headers, timeout=10)
         response = response.json()
         #log_and_print(f"response:{response}")
         return response
 
     def sign(self):
         url = f"https://api.chainingview.io/api/user/myDetails/sign"
-        response = self.session.get(url, headers=self.headers, timeout=60)
+        response = self.session.get(url, headers=self.headers, timeout=10)
         response = response.json()
         #log_and_print(f"response:{response}")
         return response
@@ -118,7 +118,7 @@ class ChainingGM:
         }
 
         url = f"https://api.chainingview.io/api/user/email_code"
-        response = self.session.post(url,data=form_data, timeout=60)
+        response = self.session.post(url,data=form_data, timeout=10)
         data = response.json()
         #log_and_print(f"response:{response}")
         return data
