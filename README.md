@@ -2,3 +2,6 @@
 1.chaining
 2.REIKI
 3.intreact.io
+4.Xplus
+5.AZCoiner
+6.berachain
