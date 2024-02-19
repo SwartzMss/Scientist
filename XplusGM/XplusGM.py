@@ -112,6 +112,15 @@ class XplusGM:
         except WebDriverException  as e:
             return False
 
+    def find_element(self, xpath, timeout=5):
+        """查找元素并点击"""
+        try:
+            wait = WebDriverWait(self.driver, timeout)
+            element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
+            return True
+        except WebDriverException  as e:
+            return False
+
     def quit(self):
         """退出驱动和关闭模拟器"""
         if self.driver:
@@ -150,6 +159,18 @@ class XplusGM:
                     log_and_print(f"{alias} connect_to_appium failed: {e}")
                     excel_manager.update_info(alias, f"connect_to_appium failed: {e}")
                     error_occurred = True
+
+            if not error_occurred:
+                if self.find_and_click_element('//android.widget.TextView[@text="每小時產出： NaN XCOIN"]') == True:	
+                    log_and_print(f"need relogin: {self.alias}")
+                    excel_manager.update_info(self.alias, "need relogin")
+                    error_occurred = True
+
+            if not error_occurred:
+                if self.find_and_click_element('//android.widget.Image[@text="yMR8SDQrNwJGY7LyJUGmEb286uAAAAAElFTkSuQmCC"]') == True:	
+                    log_and_print(f"need relogin: {self.alias}")
+                    excel_manager.update_info(self.alias, "need relogin")
+                    error_occurred = True             	
 
             if not error_occurred:
                 if self.find_and_click_element('//android.widget.Button[@text="領取"]') == True:
@@ -192,7 +213,7 @@ if __name__ == "__main__":
         index = credentials["index"]
         devid = credentials["devid"]
         if(app.run(alias, index,devid) == False):
-            retry_list.append(alias, index,devid)
+            retry_list.append((alias, index,devid))
 
     if len(retry_list) != 0:
         log_and_print("start retry faile case")
