@@ -6,7 +6,8 @@ import random
 import sys
 import datetime
 import requests
-
+from requests.exceptions import Timeout, RequestException
+from requests.exceptions import SSLError
 # 获取当前脚本的绝对路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # 获取当前脚本的父目录
@@ -60,13 +61,23 @@ class bearGM:
         self.session = requests.Session()
 
     def claimAddressCode(self, address):
-        log_and_print(f"start claimAddressCode")
+        log_and_print("start claimAddressCode")
         form_data = {'address': address}
-        url = f"https://artio-80085-faucet-api-cf.berachain.com/api/claim"
-        response = self.session.post(url,json=form_data, headers=self.headers, timeout=10)
-        data = response.json()
-        log_and_print(f"response:{response}")
-        return data
+        url = "https://artio-80085-faucet-api-cf.berachain.com/api/claim"
+        try:
+            response = self.session.post(url, json=form_data, headers=self.headers, timeout=10)
+            data = response.json()
+            log_and_print(f"response: {data}")
+            return data, None  # 返回数据和None作为错误
+        except Timeout:
+            error_msg = "Request timed out"
+        except RequestException as e:
+            error_msg = f"Request exception: {e}"
+        except ValueError:
+            error_msg = "Invalid JSON response"
+        except Exception as e:
+            error_msg = f"An unexpected error occurred: {e}"
+        return None, error_msg  # 返回None作为数据和错误消息
 
     def run(self, alias, key):
         self.create_new_session()
@@ -85,7 +96,11 @@ class bearGM:
             excel_manager.update_info(alias,  f"Error {e}")
             return False
 
-        response = self.claimAddressCode(address)
+        response, error = self.claimAddressCode(address)
+        if response is None:
+            log_and_print(f"{alias} claimAddressCode Error: {error}")
+            excel_manager.update_info(alias, f"claimAddressCode Error: {error}")
+            return False
         log_and_print(f"{alias}: {response}")
         excel_manager.update_info(alias,  f"{response}")
         return True
