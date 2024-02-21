@@ -77,7 +77,7 @@ class IntractSign:
 
     def _sign_message(self,nonce):
         #log_and_print('wallet:' + str(self.account.address))
-        msg = f"Please sign this message to verify your identity. Nonce: {nonce}"
+        msg = f"Nonce: {nonce}"
         res = self.account.sign_message(encode_defunct(text=msg))
         return res.signature.hex()
 
@@ -94,39 +94,11 @@ class IntractSign:
         data={
             "signature": hex,
             "userAddress": self.account.address,
-            "chain": {
-                "id": 56,
-                "name": "BNB Smart Chain",
-                "network": "BNB Smart Chain",
-                "nativeCurrency": {
-                    "decimals": 18,
-                    "name": "BNB",
-                    "symbol": "BNB"
-                },
-                "rpcUrls": {
-                    "public": {
-                        "http": ["https://bsc-dataseed1.bnbchain.org"]
-                    },
-                    "default": {
-                        "http": ["https://snowy-wild-pallet.bsc.discover.quiknode.pro/5fdc7ecdeddbeaf85dd75144e556935542f04a18/"]
-                    }
-                },
-                "blockExplorers": {
-                    "etherscan": {
-                        "name": "BscScan",
-                        "url": "https://bscscan.com/"
-                    },
-                    "default": {
-                        "name": "BscScan",
-                        "url": "https://bscscan.com/"
-                    }
-                },
-                "unsupported": False
-            },
             "isTaskLogin": False,
             "width": "590px",
             "reAuth": False,
             "connector": "metamask",
+            "namespaceTag": "EVM",
             "referralCode": None,
             "referralLink": None,
             "referralSource": None
