@@ -48,6 +48,7 @@ class Qna3GM:
     def __init__(self,rpc_url='https://1rpc.io/opbnb', chain_id=204):
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
         self.alias = None
+        self.session = None
         self.gaslimit = 200000
         self.account = None
         self.headers = {
@@ -65,6 +66,8 @@ class Qna3GM:
             'sec-ch-ua-mobile': '?0',
             'sec-ch-ua-platform': '"Windows"',
         }
+    def create_new_session(self):
+        self.session = requests.Session()
 
     def sign(self):
         msg=f"""AI + DYOR = Ultimate Answer to Unlock Web3 Universe"""
@@ -90,7 +93,7 @@ class Qna3GM:
             "wallet_address": self.account.address,
             "signature": signature
         }
-        response = session.post(
+        response = self.session.post(
             url, headers=self.headers,json=payload, timeout=60)
         data = response.json()
         log_and_print(f"{self.alias} post_login data:{data}")
@@ -113,7 +116,7 @@ class Qna3GM:
                 }
             }
         }
-        response = session.post(
+        response = self.session.post(
             url, headers=self.headers,json=payload, timeout=60)
         data = response.json()
         log_and_print(f"{self.alias} post_loadUserDetail data:{data}")
@@ -134,7 +137,7 @@ class Qna3GM:
             "hash": hash,
             "via": "bnb"
         }
-        response = session.post(
+        response = self.session.post(
             url, headers=self.headers, json=data,timeout=60)
         data = response.json()
         log_and_print(f"{self.alias} post_check data:{data}")
@@ -142,6 +145,7 @@ class Qna3GM:
 
             
     def run(self,alias, account):
+        self.create_new_session()
         self.alias = alias
         self.account = account
         try:
@@ -188,11 +192,6 @@ class Qna3GM:
 
 
 if __name__ == '__main__':
-    proxy_list = ['http://127.0.0.1:7890']
-    proxies = {'http': random.choice(proxy_list),
-               'https': random.choice(proxy_list)}
-    session = requests.Session()
-    session.proxies = proxies
     app = Qna3GM()
     proxyApp = ClashAPIManager(logger = log_and_print)
     failed_list = []
