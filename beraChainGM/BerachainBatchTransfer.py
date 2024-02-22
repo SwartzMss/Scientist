@@ -70,7 +70,11 @@ class BerachainBatchTransfer:
         signed_tx = self.account.sign_transaction(tx_data)
         
         # 发送交易并返回交易哈希
-        tx_hash = self.rpc.send_raw_transaction(signed_tx.rawTransaction.hex())['result']
+        data = self.rpc.send_raw_transaction(signed_tx.rawTransaction.hex())
+        log_and_print(f"alias {alias}, data: {data}")
+        if data == None or 'error' in data:
+            return None
+        tx_hash = data['result']
         return tx_hash
 
     def check_transaction_status(self, tx_hash):
@@ -94,14 +98,17 @@ if __name__ == "__main__":
         bera_transfer = BerachainBatchTransfer(private_key=key)
         balance = bera_transfer.get_balance()
         log_and_print(f"alias {alias}, balance: {balance}")
+        time.sleep(5)
+        if balance == None:
+            continue
         continue # 这边只是check balance
         if balance <= Decimal("0.02"):
             log_and_print(f"alias {alias}, too less balance skipped")
-            time.sleep(2)
+            time.sleep(5)
             continue
         tx_hash = bera_transfer.send_transaction(balance - Decimal("0.01"))
         log_and_print(f"alias {alias}, 交易哈希: {tx_hash}")
-        time.sleep(2)
+        time.sleep(5)
         # is_success = bera_transfer.check_transaction_status(tx_hash)
         # if is_success:
         #     print("交易成功！")

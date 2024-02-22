@@ -61,8 +61,14 @@ class Rpc:
     def send_raw_transaction(self, hex):
         """广播交易"""
         data = {"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[hex],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except SSLError as e:
+            print(f"send_raw_transaction SSL Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def get_balance(self, address):
         """获取余额"""
@@ -71,7 +77,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
             return res.json()  # (int(res.json()['result'], 16)) / math.pow(10, 18)
         except SSLError as e:
-            print(f"SSL Error: {e}")
+            print(f"get_balance SSL Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
