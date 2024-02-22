@@ -195,6 +195,7 @@ if __name__ == '__main__':
     app = Qna3GM()
     proxyApp = ClashAPIManager(logger = log_and_print)
     failed_list = []
+    retry_list = [] 
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("Qna3GM", log_and_print)
 
@@ -209,6 +210,20 @@ if __name__ == '__main__':
         proxyApp.change_proxy(proxyName)
         time.sleep(5)   
         account = web3.Account.from_key(key)    
+        if(app.run(alias, account) == False):
+            retry_list.append((alias, account))
+
+    if len(retry_list) != 0:
+        log_and_print("start retry faile case")
+        time.sleep(10)
+
+    for alias, account in retry_list:
+        proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
+        if proxyName== None:
+            log_and_print(f"cannot find proxy username = {alias}")
+            continue
+        proxyApp.change_proxy(proxyName)
+        time.sleep(5)   
         if(app.run(alias, account) == False):
             failed_list.append((alias, account))
 
