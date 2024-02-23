@@ -86,7 +86,7 @@ class bearGM:
         task_type = 'TurnstileTaskProxyless'
 
         address = web3.Account.from_key(key).address 
-        captcha_client = YesCaptchaClient(logger = log_and_print)
+        captcha_client = YesCaptchaClient(logger = log_and_print,client_key = client_key)
         try:
             recaptcha_token = captcha_client.get_recaptcha_token(website_url, website_key, task_type)
             self.headers['authorization'] = 'Bearer ' + recaptcha_token
@@ -113,7 +113,7 @@ if __name__ == "__main__":
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("bearGM", log_and_print)
     credentials_list = UserInfoApp.find_user_credentials_for_eth("bearGM")
-
+    client_key = UserInfoApp.find_yesCaptch_clientkey()
     for credentials in credentials_list:
         alias = credentials["alias"]
         key = credentials["key"]

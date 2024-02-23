@@ -162,13 +162,13 @@ class CapxGM:
             response = self.get_faucet()
             if response['result']['success'] == False and response['result']['message'] != "Funds can be requested once every 24hrs":
                 raise Exception(f"get_faucet Error: {response}")
-            log_and_print(f"{alias} login successfully ")
-            excel_manager.update_info(alias, f"login successfully")
+            log_and_print(f"{alias} faucet successfully ")
+            excel_manager.update_info(alias, f"faucet successfully")
             self.session.close()
         except Exception as e:
             self.session.close()
-            log_and_print(f"{alias} login failed: {e}")
-            excel_manager.update_info(alias, f"login failed: {e}")
+            log_and_print(f"{alias} faucet failed: {e}")
+            excel_manager.update_info(alias, f"faucet failed: {e}")
             return False
         
 

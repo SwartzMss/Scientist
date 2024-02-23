@@ -15,6 +15,22 @@ class UserInfo:
         self.accountfile_path = accountfile_path
         self.logger = logger  # logger 参数是传递给类的 log_and_print 函数
 
+    def find_yesCaptch_clientkey(self):
+        try:
+            # 从文件中加载JSON数据
+            with open(self.accountfile_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+
+            return data.get("YesCaptchClientKey", None)
+            
+        except json.JSONDecodeError:
+            self.logger("Invalid JSON data")
+        except KeyError as e:
+            self.logger(f"Missing key in JSON data: {e}")
+        except FileNotFoundError:
+            self.logger(f"File '{accountfile_path}' not found")
+        return None
+
     def find_user_outlook_token(self, exclude=None):
         credentials_list = []
         try:
