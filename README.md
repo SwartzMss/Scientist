@@ -6,3 +6,4 @@
 5.AZCoiner
 6.berachain
 7.qna3
+8.capx
