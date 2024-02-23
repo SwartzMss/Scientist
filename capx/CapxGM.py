@@ -17,8 +17,7 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 # 获取当前脚本的父目录
 parent_dir = os.path.dirname(script_dir)
 sys.path.append(parent_dir)
-# 现在可以从tools目录导入Rpc
-from tools.rpc import Rpc
+
 
 # 现在可以从tools目录导入UserInfo
 from tools.UserInfo import UserInfo
@@ -45,8 +44,7 @@ def log_and_print(text):
 
 
 class CapxGM:
-    def __init__(self,rpc_url='https://1rpc.io/opbnb', chain_id=204):
-        self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
+    def __init__(self):
         self.alias = None
         self.session = None
         self.gaslimit = 200000
@@ -68,6 +66,7 @@ class CapxGM:
     def create_new_session(self):
         ua = UserAgent()
         self.headers['user-agent'] = ua.random
+        self.headers.pop('Authorization', None)
         self.session = requests.Session()
         self.session.cookies.clear()
 
