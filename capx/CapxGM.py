@@ -88,7 +88,7 @@ class CapxGM:
         }
         self.headers['Access-Key'] = '196c53ab-03cd-407b-a859-95f770785368'
         response = self.session.post(
-            url, headers=self.headers,json=payload, timeout=60)
+            url, headers=self.headers,json=payload, timeout=120)
         self.headers.pop('Access-Key', None)  # 如果'Access-Key'不存在，返回None，不会抛出异常
         data = response.json()
         log_and_print(f"{self.alias} post_identity data:{data}")
@@ -106,7 +106,7 @@ class CapxGM:
             }
         }
         response = self.session.post(
-            url, headers=self.headers,json=payload, timeout=60)
+            url, headers=self.headers,json=payload, timeout=120)
         data = response.json()
         log_and_print(f"{self.alias} post_auth data:{data}")
         return data
@@ -119,7 +119,7 @@ class CapxGM:
             "returnSecureToken":True
         }
         response = self.session.post(
-            url, headers=self.headers,json=payload, timeout=60)
+            url, headers=self.headers,json=payload, timeout=120)
         data = response.json()
         log_and_print(f"{self.alias} post_signInWithCustomToken data:{data}")
         return data
@@ -128,7 +128,7 @@ class CapxGM:
         url = f"https://us-central1-capx-app.cloudfunctions.net/users/wallet"
 
         response = self.session.get(
-            url, headers=self.headers, timeout=60)
+            url, headers=self.headers, timeout=120)
         data = response.json()
         log_and_print(f"{self.alias} get_wallet data:{data}")
         return data
@@ -137,7 +137,7 @@ class CapxGM:
         url = f"https://us-central1-capx-app.cloudfunctions.net/users/faucet"
 
         response = self.session.get(
-            url, headers=self.headers,timeout=60)
+            url, headers=self.headers,timeout=120)
         data = response.json()
         log_and_print(f"{self.alias} get_faucet data:{data}")
         return data   
@@ -185,10 +185,11 @@ if __name__ == '__main__':
         alias = credentials["alias"]
         key = credentials["key"]
         proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
-        if proxyName== None:
+        if not proxyName:
             log_and_print(f"cannot find proxy username = {alias}")
             continue
-        proxyApp.change_proxy(proxyName)
+        if proxyApp.change_proxy_until_success(proxyName) == False:
+            continue
         time.sleep(5)   
         account = web3.Account.from_key(key)    
         if(app.run(alias, account) == False):
@@ -200,10 +201,11 @@ if __name__ == '__main__':
 
     for alias, account in retry_list:
         proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
-        if proxyName== None:
+        if not proxyName:
             log_and_print(f"cannot find proxy username = {alias}")
             continue
-        proxyApp.change_proxy(proxyName)
+        if proxyApp.change_proxy_until_success(proxyName) == False:
+            continue
         time.sleep(5)   
         if(app.run(alias, account) == False):
             failed_list.append((alias, account))

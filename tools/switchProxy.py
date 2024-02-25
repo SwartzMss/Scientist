@@ -1,5 +1,6 @@
 import requests
 import yaml
+import random
 def myprint(text):
     print(text)
 
@@ -41,6 +42,50 @@ class ClashAPIManager:
             self.logger(f"Error: Unable to change proxy to {proxy_name} {e}")
             return False
 
+    def get_all_proxies(self):
+        """获取并打印所有代理信息"""
+        try:
+            response = requests.get(f"{self.api_url}/proxies", headers=self.headers)
+            if response.status_code == 200:
+                proxies = response.json()["proxies"]
+                for key, value in proxies.items():
+                    self.logger(f"Proxy Name: {key}, Type: {value['type']}")
+            else:
+                self.logger(f"Failed to get proxies (Status code: {response.status_code})")
+        except Exception as e:
+            self.logger(f"Error: Unable to get proxies {e}")
 
-# app = ClashAPIManager()
-# app.change_proxy('🇭🇰 HK | 香港 05')
+
+    def verify_ip_change(self):
+        """验证IP地址是否成功切换"""
+        try:
+            response = requests.get("https://myip.ipip.net/", timeout=60)
+            if response.status_code == 200:
+                self.logger(f"Current IP Info: {response.text}")
+                return True
+            else:
+                self.logger(f"Failed to verify IP change (Status code: {response.status_code})")
+                return False
+        except Exception as e:
+            self.logger(f"Error: Unable to verify IP change {e}")
+            return False
+
+    def change_proxy_until_success(self, proxy_names):
+        """遍历代理列表，尝试切换到每个代理，直到成功为止"""
+        random.shuffle(proxy_names)
+        for proxy_name in proxy_names:
+            if self.change_proxy(proxy_name):
+                if self.verify_ip_change():
+                    self.logger(f"Successfully changed proxy and verified IP: {proxy_name}")
+                    return True
+                else:
+                    self.logger(f"Proxy changed but IP verification failed: {proxy_name}")
+            else:
+                self.logger(f"Failed to change to proxy: {proxy_name}")
+        # 如果所有代理都尝试过且都失败了，返回False
+        return False
+
+app = ClashAPIManager()
+app.get_all_proxies()
+app.change_proxy('🇺🇸 US | 美国 06')
+app.verify_ip_change()

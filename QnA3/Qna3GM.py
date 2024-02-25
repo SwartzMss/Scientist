@@ -204,10 +204,11 @@ if __name__ == '__main__':
         alias = credentials["alias"]
         key = credentials["key"]
         proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
-        if proxyName== None:
+        if not proxyName:
             log_and_print(f"cannot find proxy username = {alias}")
             continue
-        proxyApp.change_proxy(proxyName)
+        if proxyApp.change_proxy_until_success(proxyName) == False:
+            continue
         time.sleep(5)   
         account = web3.Account.from_key(key)    
         if(app.run(alias, account) == False):
@@ -219,10 +220,11 @@ if __name__ == '__main__':
 
     for alias, account in retry_list:
         proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
-        if proxyName== None:
+        if not proxyName:
             log_and_print(f"cannot find proxy username = {alias}")
             continue
-        proxyApp.change_proxy(proxyName)
+        if proxyApp.change_proxy_until_success(proxyName) == False:
+            continue
         time.sleep(5)   
         if(app.run(alias, account) == False):
             failed_list.append((alias, account))

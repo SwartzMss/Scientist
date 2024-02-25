@@ -64,8 +64,8 @@ class Rpc:
         try:
             res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
             return res.json()
-        except SSLError as e:
-            print(f"send_raw_transaction SSL Error: {e}")
+        except Exception as e:
+            print(f"send_raw_transaction  Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None

@@ -94,7 +94,7 @@ class UserInfo:
             # 遍历用户列表，查找对应的proxy
             for user in data.get("users", []):
                 if user.get("alias") == alias:
-                    return user.get("proxy", None)
+                    return user.get("proxy", [])
             
         except json.JSONDecodeError:
             self.logger("Invalid JSON data")
@@ -102,7 +102,7 @@ class UserInfo:
             self.logger(f"Missing key in JSON data: {e}")
         except FileNotFoundError:
             self.logger(f"File '{accountfile_path}' not found")
-        return None
+        return []
     
     def find_user_credentials_for_eth(self, exclude=None):
         credentials_list = []
