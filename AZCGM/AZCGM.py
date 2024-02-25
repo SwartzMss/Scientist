@@ -168,7 +168,7 @@ class AZCGM:
                     log_and_print(f"{alias} connect_to_appium failed: {e}")
                     excel_manager.update_info(self.alias, f"connect_to_appium failed: {e} ")
                     error_occurred = True
-
+            time.sleep(3) # 这边耗时会等待最开始的加载
             if not error_occurred:
                 if self.find_element('//android.widget.TextView[@text="AZC"]') == True:
                     log_and_print(f"already GM: {self.alias}")

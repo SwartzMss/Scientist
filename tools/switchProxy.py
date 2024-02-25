@@ -85,7 +85,7 @@ class ClashAPIManager:
         # 如果所有代理都尝试过且都失败了，返回False
         return False
 
-app = ClashAPIManager()
-app.get_all_proxies()
-app.change_proxy('🇺🇸 US | 美国 06')
-app.verify_ip_change()
+# app = ClashAPIManager()
+# app.get_all_proxies()
+# app.change_proxy('🇺🇸 US | 美国 06')
+# app.verify_ip_change()
