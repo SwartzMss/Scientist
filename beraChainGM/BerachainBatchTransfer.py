@@ -48,7 +48,7 @@ class BerachainBatchTransfer:
         balance_bera = self.web3.from_wei(balance_wei, 'ether')
         return Decimal(balance_bera)
 
-    def send_transaction(self, value):
+    def send_transaction_to_swartz(self, value):
         '''发送单个转账'''
         nonce = int(self.get_nonce(), 16)
         BALANCE_PRECISION = Decimal('1e18')  # 主币精度，18位，转换为Decimal类型
@@ -106,7 +106,7 @@ if __name__ == "__main__":
             log_and_print(f"alias {alias}, too less balance skipped")
             time.sleep(5)
             continue
-        tx_hash = bera_transfer.send_transaction(balance - Decimal("0.01"))
+        tx_hash = bera_transfer.send_transaction_to_swartz(balance - Decimal("0.01"))
         log_and_print(f"alias {alias}, 交易哈希: {tx_hash}")
         time.sleep(5)
         # is_success = bera_transfer.check_transaction_status(tx_hash)
