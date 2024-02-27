@@ -111,7 +111,7 @@ class darenGM:
         response = session.post(
             url, headers=self.headers,json=data, timeout=10)
         data = response.json()
-        log_and_print(f"response:{data}")
+        log_and_print(f"{alias} postUsers response:{data}")
         return data
 
 
@@ -120,7 +120,17 @@ class darenGM:
         response = session.post(
             url, headers=self.headers, timeout=10)
         data = response.json()
-        log_and_print(f"response:{data}")
+        log_and_print(f"{alias} checkin response:{data}")
+        return data
+
+
+
+    def checkTask(self):
+        url = f"https://api.daren.market/v2/tasks/"
+        response = session.get(
+            url, headers=self.headers, timeout=10)
+        data = response.json()
+        log_and_print(f"{alias}  checkTask response:{data}")
         return data
 
     def checkResult(self):
@@ -128,9 +138,15 @@ class darenGM:
         response = session.get(
             url, headers=self.headers, timeout=10)
         data = response.json()
-        log_and_print(f"response:{data}")
+        log_and_print(f"{alias}  checkResult response:{data}")
         return data
 
+    def extract_task_status(self,json_str):
+        for task in json_str["myTasks"]:
+            if task["taskID"] == "DAILY_CHECK_IN":
+                return task["completed"], task["claimed"]
+        return None, None
+        
     def run(self,alias, account):
         self.alias = alias
         self.account = account
@@ -159,9 +175,17 @@ class darenGM:
             return False  
  
         try:
+            response = self.checkTask()
+            if response["success"] != True:
+                raise Exception(f"checkTask Error: {response}")
+            completed, claimed = self.extract_task_status(response)
+            log_and_print(f"{alias} completed {completed} claimed {claimed}")
             response = self.checkin()
             if response["success"] != True and 'Task has been claimed' not in response["message"]:
                 raise Exception(f"checkin Error: {response}")
+            response = self.checkTask()
+            if response["success"] != True:
+                raise Exception(f"checkTask Error: {response}")
             response = self.checkResult()
             if response["success"] != True:
                 raise Exception(f"checkResult Error: {response}")
