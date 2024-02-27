@@ -50,13 +50,14 @@ class BatchDeposit:
     def send_transaction_from_swartz(self, swartz_key, to_address, value):
         '''使用Swartz账户发送单个转账'''
         nonce = int(self.get_nonce(), 16)
+        gas_price = int(self.get_gas_price(),16)
         tx_data = {
             'nonce': Web3.to_hex(nonce),
             'chainId': self.chain_id,
             'to': Web3.to_checksum_address(to_address),
             'value':  Web3.to_wei(value, 'ether'),
             'gas': Web3.to_hex(21000),
-            'gasPrice': Web3.to_hex(self.web3.to_wei('0.00000001', 'gwei'))
+            'gasPrice': Web3.to_hex(self.web3.to_wei(gas_price, 'wei'))
         }
         signed_tx = self.account.sign_transaction(tx_data)
         data = self.rpc.send_raw_transaction(signed_tx.rawTransaction.hex())
