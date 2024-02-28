@@ -179,6 +179,7 @@ class ultiverseGM:
             log_and_print(f"{alias} get_nonce succeed")
         except Exception as e:
             log_and_print(f"{alias} get_nonce failed: {e}")
+            excel_manager.update_info(alias, f" get_nonce failed: {e}")
             return False
 
         try:
@@ -186,6 +187,7 @@ class ultiverseGM:
             log_and_print(f"{alias} sign_message successfully ")
         except Exception as e:
             log_and_print(f"{alias} sign_message failed: {e}")
+            excel_manager.update_info(alias, f" sign_message failed: {e}")
             return False
 
         try:
@@ -199,6 +201,7 @@ class ultiverseGM:
             self.headers['Ul-Auth-Address'] =  self.account.address
         except Exception as e:
             log_and_print(f"{alias} signin failed: {e}")
+            excel_manager.update_info(alias, f" signin failed: {e}")
             return False     
 
         try:
@@ -209,6 +212,7 @@ class ultiverseGM:
             log_and_print(f"{alias} getProfile successfully soulPoints = {soulPoints} ")
         except Exception as e:
             log_and_print(f"{alias} getProfile failed: {e}")
+            excel_manager.update_info(alias, f" getProfile failed: {e}")
             return False 
 
         try:
@@ -216,9 +220,18 @@ class ultiverseGM:
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             signdata = filter_tasks_within_soul_limit(response,soulPoints)
+            # 解析 JSON 字符串回 Python 对象
+            data = json.loads(signdata)
+            
+            # 检查 worldIds 是否为空
+            if not data['worldIds']:  # 这将检查列表是否为空
+                log_and_print(f"{alias} No tasks found within the soul limit or maybe tasks all been explored")
+                excel_manager.update_info(alias, f" No tasks found within the soul limit or maybe tasks all been explored")
+                return True
             log_and_print(f"{alias} getList successfully ")
         except Exception as e:
             log_and_print(f"{alias} getList failed: {e}")
+            excel_manager.update_info(alias, f" getList failed: {e}")
             return False 
 
         try:
@@ -226,8 +239,10 @@ class ultiverseGM:
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             log_and_print(f"{alias} sign successfully ")
+            excel_manager.update_info(alias, f" sign successfully: {e}")
         except Exception as e:
             log_and_print(f"{alias} sign failed: {e}")
+            excel_manager.update_info(alias, f" sign failed: {e}")
             return False 
             
         try:
@@ -236,8 +251,10 @@ class ultiverseGM:
             if 'error' in response:
                 raise Exception(f"Error: {response}")
             log_and_print(f"{alias} explore_action successfully ")
+            excel_manager.update_info(alias, f" explore_action successfully")
         except Exception as e:
             log_and_print(f"{alias} explore_action failed: {e}")
+            excel_manager.update_info(alias, f" explore_action failed: {e}")
             return False 
 
 
