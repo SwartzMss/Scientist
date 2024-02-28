@@ -56,6 +56,7 @@ class ultiverseGM:
 
     # 获取 nonce
     def get_nonce(self):
+        self.headers.pop('Ul-Auth-Token', None)
         self.headers.pop('Cookie', None)
         self.headers.pop('Ul-Auth-Address', None)
         url = f"https://toolkit.ultiverse.io/api/user/signature"
@@ -233,10 +234,10 @@ class ultiverseGM:
             exploreCallData = self.encode_ultiverse_data(response)
             response = self.explore_action(exploreCallData)
             if 'error' in response:
-                raise Exception(f"explore_action Error: {response}")
-            log_and_print(f"{alias} explore successfully ")
+                raise Exception(f"Error: {response}")
+            log_and_print(f"{alias} explore_action successfully ")
         except Exception as e:
-            log_and_print(f"{alias} explore failed: {e}")
+            log_and_print(f"{alias} explore_action failed: {e}")
             return False 
 
 
