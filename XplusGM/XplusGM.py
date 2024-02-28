@@ -160,7 +160,7 @@ class XplusGM:
                     excel_manager.update_info(alias, f"connect_to_appium failed: {e}")
                     error_occurred = True
 
-            time.sleep(5) # 这边耗时会等待最开始的加载
+            time.sleep(8) # 这边耗时会等待最开始的加载
             if not error_occurred:
                 if self.find_element('//android.widget.TextView[@text="每小時產出： NaN XCOIN"]') == True:	
                     log_and_print(f"need relogin: {self.alias}")
