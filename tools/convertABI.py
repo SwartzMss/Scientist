@@ -1,5 +1,5 @@
 from web3 import Web3
-from eth_abi import encode
+from eth_abi import encode_abi
 
 def split_contract_data(data):
     method_id = data[:10]
@@ -32,7 +32,7 @@ values = [
     Web3.to_bytes(hexstr="0x9dd71c69a94913753a875caa476bea016949c19f75fb7eac84c1ac3d6c43b93c75026e9ab3ca618396794bd25b9d396b3deac13994557ade0026a30e2b5a7c8a1b")  # signatureinfo, bytes
 ]
 
-encoded_data = Web3.solidity_keccak(
+encoded_data = encode_abi(
     ['uint256', 'uint256', 'uint16[]', 'bytes32', 'bytes'],
     values
 )
