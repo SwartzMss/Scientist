@@ -159,7 +159,7 @@ class ultiverseGM:
         return encoded_data.hex()
 
     def explore_action(self,param):
-        contract_addr = contract_addr
+        contract_addr = Web3.to_checksum_address("0x16d4c4b440cb779a39b0d8b89b1590a4faa0215d")
         MethodID="0x75278b5c"
         data = MethodID+param
         res = self.rpc.transfer(
