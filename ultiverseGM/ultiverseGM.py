@@ -231,8 +231,6 @@ class ultiverseGM:
             
         try:
             exploreCallData = self.encode_ultiverse_data(response)
-            if response["success"] != True:
-                raise Exception(f"encode_ultiverse_data Error: {response}")
             response = self.explore_action(exploreCallData)
             if 'error' in response:
                 raise Exception(f"explore_action Error: {response}")
