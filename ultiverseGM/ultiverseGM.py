@@ -158,7 +158,7 @@ class ultiverseGM:
         # 返回编码后的十六进制字符串
         return encoded_data.hex()
 
-    def explore_action(self,contract_addr,param):
+    def explore_action(self,param):
         contract_addr = contract_addr
         MethodID="0x75278b5c"
         data = MethodID+param
@@ -228,6 +228,17 @@ class ultiverseGM:
         except Exception as e:
             log_and_print(f"{alias} sign failed: {e}")
             return False 
+            
+        try:
+            exploreCallData = self.encode_ultiverse_data(response)
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            self.explore_action(exploreCallData)
+            log_and_print(f"{alias} explore successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} explore failed: {e}")
+            return False 
+
 
 if __name__ == '__main__':
     session = requests.Session()
