@@ -123,10 +123,10 @@ class ultiverseGM:
         world_ids = [task['worldId'] for task in selected_tasks if 'worldId' in task]
         return json.dumps({"worldIds": world_ids})
     
-    def sign(self):
+    def sign(self, signinData):
         url = f"https://pilot.ultiverse.io/api/explore/sign"
         data={
-            "worldIds":["BAC"]
+            "worldIds": signinDataDict["worldIds"]
         }
         response = session.post(url, headers=self.headers,json=data, timeout=60)
         data = response.json()
@@ -209,13 +209,14 @@ class ultiverseGM:
             response = self.getList()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
+            signdata = filter_tasks_within_soul_limit(response,soulPoints)
             log_and_print(f"{alias} getList successfully ")
         except Exception as e:
             log_and_print(f"{alias} getList failed: {e}")
             return False 
 
         try:
-            response = self.sign()
+            response = self.sign(signdata)
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             log_and_print(f"{alias} sign successfully ")
