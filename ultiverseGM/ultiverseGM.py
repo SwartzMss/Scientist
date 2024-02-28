@@ -219,7 +219,7 @@ class ultiverseGM:
             response = self.getList()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
-            signdata = filter_tasks_within_soul_limit(response,soulPoints)
+            signdata = self.filter_tasks_within_soul_limit(response,soulPoints)
             # 解析 JSON 字符串回 Python 对象
             data = json.loads(signdata)
             
