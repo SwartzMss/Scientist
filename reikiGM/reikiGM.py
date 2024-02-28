@@ -21,7 +21,7 @@ from tools.UserInfo import UserInfo
 
 # 现在可以从tools目录导入excelWorker
 from tools.excelWorker import excelWorker
-
+from tools.switchProxy import ClashAPIManager
 
 # 获取当前时间并格式化为字符串
 current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -173,6 +173,7 @@ if __name__ == '__main__':
     session = requests.Session()
     session.proxies = proxies
     app = ReikiSign()
+    proxyApp = ClashAPIManager(logger = log_and_print)
 
     failed_list = []
     UserInfoApp = UserInfo(log_and_print)
@@ -181,7 +182,12 @@ if __name__ == '__main__':
     for credentials in credentials_list:
         alias = credentials["alias"]
         key = credentials["key"]
-
+        proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
+        if not proxyName:
+            log_and_print(f"cannot find proxy username = {alias}")
+            continue
+        if proxyApp.change_proxy_until_success(proxyName) == False:
+            continue
         account = web3.Account.from_key(key)    
         if(app.run(alias, account) == False):
             failed_list.append((alias, account))
