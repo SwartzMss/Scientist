@@ -132,7 +132,12 @@ class ultiverseGM:
         data = response.json()
         return data
 
-    def encode_ultiverse_data(self, deadline, voyageId, destinations, data_hex, signatureinfo_hex):
+    def encode_ultiverse_data(self, json_data):
+        deadline = json_data['data']['deadline']
+        voyageId = json_data['data']['voyageId']
+        destinations = json_data['data']['destinations']
+        data_hex = json_data['data']['data']
+        signatureinfo_hex = json_data['data']['signature']
         # 转换十六进制字符串为字节串
         data_bytes = Web3.to_bytes(hexstr=data_hex)
         signatureinfo_bytes = Web3.to_bytes(hexstr=signatureinfo_hex)
