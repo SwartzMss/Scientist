@@ -9,20 +9,21 @@ import datetime
 import json
 import os
 import re
-
+from web3 import Web3
+from eth_abi import encode
 
 # 获取当前脚本的绝对路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # 获取当前脚本的父目录
 parent_dir = os.path.dirname(script_dir)
 sys.path.append(parent_dir)
-
+from tools.rpc import Rpc
 # 现在可以从tools目录导入UserInfo
 from tools.UserInfo import UserInfo
 
 # 现在可以从tools目录导入excelWorker
 from tools.excelWorker import excelWorker
-
+from tools.switchProxy import ClashAPIManager
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
@@ -35,16 +36,17 @@ def log_message(text):
 
 def log_and_print(text):
     message = log_message(text)
-    with open(log_file_path, 'a') as log_file:
+    with open(log_file_path, 'a',encoding='utf-8') as log_file:
         print(message)
         log_file.write(message + '\n')
 
 
 class ultiverseGM:
-    def __init__(self):
+    def __init__(self,rpc_url='https://1rpc.io/opbnb', chain_id=204):
         self.alias = None
         self.account = None
         self.signMsg = None
+        self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
         self.headers = {
             'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -90,9 +92,9 @@ class ultiverseGM:
 
         soul_in_account = int(json_strr["data"]['soulInAccount'])
         soul_in_wallets = int(json_strr["data"]['soulInWallets'])
-        
-        total_soul = soul_in_account + soul_in_wallets
-        final_result = total_soul // 1000000
+        log_and_print(f"{alias} soul_in_account : {soul_in_account} soul_in_wallets {soul_in_wallets}")
+        # total_soul = soul_in_account + soul_in_wallets
+        final_result = soul_in_account // 1000000
         return final_result
 
     def getProfile(self):
@@ -127,7 +129,7 @@ class ultiverseGM:
     def sign(self, signinData):
         url = f"https://pilot.ultiverse.io/api/explore/sign"
         data={
-            "worldIds": signinDataDict["worldIds"]
+            "worldIds": signinData["worldIds"]
         }
         response = session.post(url, headers=self.headers,json=data, timeout=60)
         data = response.json()
@@ -162,11 +164,24 @@ class ultiverseGM:
     def explore_action(self,param):
         contract_addr = Web3.to_checksum_address("0x16d4c4b440cb779a39b0d8b89b1590a4faa0215d")
         MethodID="0x75278b5c"
-        data = MethodID+param
+        dataInfo = MethodID+param
         res = self.rpc.transfer(
-            self.account, contract_addr, 0, 21000, data=data)
+            self.account, contract_addr, 0, 103808, data=dataInfo)
         return res
 
+
+    def send_raw_transaction(self, hex):
+        data = {"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[hex],"id":1}
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            time.sleep(2)
+            return None
+
+    def count_explored_entries(self,data):
+        # Assuming 'data' is a dictionary with a 'data' key containing a list of entries
+        return sum(1 for entry in data['data'] if entry.get('explored', False))
 
     def run(self,alias, account):
         self.alias = alias
@@ -219,14 +234,15 @@ class ultiverseGM:
             response = self.getList()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
+            time.sleep(3)
             signdata = self.filter_tasks_within_soul_limit(response,soulPoints)
             # 解析 JSON 字符串回 Python 对象
-            data = json.loads(signdata)
-            
+            signJason = json.loads(signdata)
+            exploredNum = self.count_explored_entries(response)
             # 检查 worldIds 是否为空
-            if not data['worldIds']:  # 这将检查列表是否为空
-                log_and_print(f"{alias} No tasks found within the soul limit or maybe tasks all been explored")
-                excel_manager.update_info(alias, f" No tasks found within the soul limit or maybe tasks all been explored")
+            if not signJason['worldIds']:  # 这将检查列表是否为空
+                log_and_print(f"{alias} No tasks found within the soul limit or maybe tasks all been explored exploredNum = {exploredNum}")
+                excel_manager.update_info(alias, f" No tasks found within the soul limit or maybe tasks all been explored  exploredNum = {exploredNum}")
                 return True
             log_and_print(f"{alias} getList successfully ")
         except Exception as e:
@@ -235,11 +251,11 @@ class ultiverseGM:
             return False 
 
         try:
-            response = self.sign(signdata)
+            response = self.sign(signJason)
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             log_and_print(f"{alias} sign successfully ")
-            excel_manager.update_info(alias, f" sign successfully: {e}")
+            excel_manager.update_info(alias, f" sign successfully")
         except Exception as e:
             log_and_print(f"{alias} sign failed: {e}")
             excel_manager.update_info(alias, f" sign failed: {e}")
@@ -250,8 +266,12 @@ class ultiverseGM:
             response = self.explore_action(exploreCallData)
             if 'error' in response:
                 raise Exception(f"Error: {response}")
-            log_and_print(f"{alias} explore_action successfully ")
-            excel_manager.update_info(alias, f" explore_action successfully")
+            response = self.getList()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            exploredNum = self.count_explored_entries(response)
+            log_and_print(f"{alias} explore_action successfully exploredNum= {exploredNum}")
+            excel_manager.update_info(alias, f" explore_action successfully exploredNum= {exploredNum}")
         except Exception as e:
             log_and_print(f"{alias} explore_action failed: {e}")
             excel_manager.update_info(alias, f" explore_action failed: {e}")
@@ -261,16 +281,39 @@ class ultiverseGM:
 if __name__ == '__main__':
     session = requests.Session()
     app = ultiverseGM()
-
+    proxyApp = ClashAPIManager(logger = log_and_print)
     failed_list = []
+    retry_list = [] 
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("ultiverseGM", log_and_print)
+
     credentials_list = UserInfoApp.find_user_credentials_for_eth("ultiverseGM")
     for credentials in credentials_list:
         alias = credentials["alias"]
         key = credentials["key"]
-
+        proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
+        if not proxyName:
+            log_and_print(f"cannot find proxy username = {alias}")
+            continue
+        if proxyApp.change_proxy_until_success(proxyName) == False:
+            continue
+        time.sleep(5)   
         account = web3.Account.from_key(key)    
+        if(app.run(alias, account) == False):
+            retry_list.append((alias, account))
+
+    if len(retry_list) != 0:
+        log_and_print("start retry faile case")
+        time.sleep(10)
+
+    for alias, account in retry_list:
+        proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
+        if not proxyName:
+            log_and_print(f"cannot find proxy username = {alias}")
+            continue
+        if proxyApp.change_proxy_until_success(proxyName) == False:
+            continue
+        time.sleep(5)   
         if(app.run(alias, account) == False):
             failed_list.append((alias, account))
 
@@ -280,3 +323,4 @@ if __name__ == '__main__':
     for alias, account in failed_list:
         log_and_print(f"final failed username = {alias}")
     excel_manager.save_msg_and_stop_service()
+    proxyApp.change_proxy("🇭🇰 HK | 香港 01")
