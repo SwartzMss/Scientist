@@ -85,6 +85,27 @@ class ultiverseGM:
         data = response.json()
         return data
 
+    def calculate_total_soul_from_json(self, json_strr):
+
+        soul_in_account = int(json_strr["data"]['soulInAccount'])
+        soul_in_wallets = int(json_strr["data"]['soulInWallets'])
+        
+        total_soul = soul_in_account + soul_in_wallets
+        final_result = total_soul // 1000000
+        return final_result
+
+    def getProfile(self):
+        url = f"https://pilot.ultiverse.io/api/profile"
+        response = session.get(url, headers=self.headers, timeout=60)
+        data = response.json()
+        return data
+
+    def getList(self):
+        url = f"https://pilot.ultiverse.io/api/explore/list"
+        response = session.get(url, headers=self.headers, timeout=60)
+        data = response.json()
+        return data
+
     def sign(self):
         url = f"https://pilot.ultiverse.io/api/explore/sign"
         data={
@@ -93,6 +114,8 @@ class ultiverseGM:
         response = session.post(url, headers=self.headers,json=data, timeout=60)
         data = response.json()
         return data
+
+
 
     def explore_action(self,contract_addr, signature, voyageId, deadline):
         contract_addr = contract_addr
@@ -148,6 +171,25 @@ class ultiverseGM:
         except Exception as e:
             log_and_print(f"{alias} signin failed: {e}")
             return False     
+
+        try:
+            response = self.getProfile()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            soulPoints = self.calculate_total_soul_from_json(response)
+            log_and_print(f"{alias} getProfile successfully soulPoints = {soulPoints} ")
+        except Exception as e:
+            log_and_print(f"{alias} getProfile failed: {e}")
+            return False 
+
+        try:
+            response = self.getList()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            log_and_print(f"{alias} getList successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} getList failed: {e}")
+            return False 
 
         try:
             response = self.sign()
