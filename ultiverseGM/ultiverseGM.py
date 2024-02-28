@@ -106,6 +106,23 @@ class ultiverseGM:
         data = response.json()
         return data
 
+    def filter_tasks_within_soul_limit(self,json_data, num):
+        available_tasks = [task for task in json_data['data'] if not task['explored']]
+        available_tasks.sort(key=lambda x: x['soul'])
+        
+        selected_tasks = []
+        current_soul_sum = 0
+        
+        for task in available_tasks:
+            if current_soul_sum + task['soul'] <= num:
+                selected_tasks.append(task)
+                current_soul_sum += task['soul']
+            if current_soul_sum >= num:
+                break
+        
+        world_ids = [task['worldId'] for task in selected_tasks if 'worldId' in task]
+        return json.dumps({"worldIds": world_ids})
+    
     def sign(self):
         url = f"https://pilot.ultiverse.io/api/explore/sign"
         data={
@@ -115,25 +132,31 @@ class ultiverseGM:
         data = response.json()
         return data
 
+    def encode_ultiverse_data(self, deadline, voyageId, destinations, data_hex, signatureinfo_hex):
+        # 转换十六进制字符串为字节串
+        data_bytes = Web3.to_bytes(hexstr=data_hex)
+        signatureinfo_bytes = Web3.to_bytes(hexstr=signatureinfo_hex)
+    
+        # 定义参数值和它们的类型
+        values = [
+            deadline,  # deadline, uint256
+            voyageId,  # voyageId, uint256
+            destinations,  # destinations, uint16[]
+            data_bytes,  # data, bytes32
+            signatureinfo_bytes  # signatureinfo, bytes
+        ]
+        types = ['uint256', 'uint256', 'uint16[]', 'bytes32', 'bytes']
+        
+        # 使用eth_abi进行编码
+        encoded_data = encode(types, values)
+        
+        # 返回编码后的十六进制字符串
+        return encoded_data.hex()
 
-
-    def explore_action(self,contract_addr, signature, voyageId, deadline):
+    def explore_action(self,contract_addr,param):
         contract_addr = contract_addr
         MethodID="0x75278b5c"
-        param_1="0000000000000000000000000000000000000000000000000000000065de06f8"
-        param_2="000000000000000000000000000000000000000000000000000000000004124d"
-        param_3="00000000000000000000000000000000000000000000000000000000000000a0"
-        param_4="aa7e241318600646be02c4ae6c3b80f2ce78d107af72dc1abbf6338db2694263"
-        param_5="00000000000000000000000000000000000000000000000000000000000000e0"
-        param_6="0000000000000000000000000000000000000000000000000000000000000001"
-        param_7="0000000000000000000000000000000000000000000000000000000000000002"
-        param_8="0000000000000000000000000000000000000000000000000000000000000041"
-        param_9="64342684f186055a527b43afd75b89a78c8f13b133b1e553b9b35fc383c86fe3"
-        param_10="6d2bdf5edb02e80298574f17674178b3e5cf12a41322731705c999f30b10f862"
-        param_11="1b00000000000000000000000000000000000000000000000000000000000000"
-
-
-        data = MethodID+param_1+param_2+param_3+param_4+param_5+param_6+param_7+param_8+param_9+param_10+param_11+param_12
+        data = MethodID+param
         res = self.rpc.transfer(
             self.account, contract_addr, 0, 21000, data=data)
         return res
