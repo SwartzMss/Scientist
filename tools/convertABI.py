@@ -1,5 +1,5 @@
 from web3 import Web3
-from eth_abi import encode
+from eth_abi import encode_abi
 
 def split_contract_data(data):
     method_id = data[:10]
@@ -25,14 +25,14 @@ print(function_id)
 
 # 定义你的参数和它们的类型
 values = [
-    1709039259,  # deadline, uint256
-    208191,  # voyageId, uint256
-    [4],  # destinations, uint16[]
-    Web3.to_bytes(hexstr="0x33491cb0455f22734db05b9c1d99b7948901b0f6a5cc5fc5052f65b70d15ad8a"),  # data, bytes32
-    Web3.to_bytes(hexstr="0x9dd71c69a94913753a875caa476bea016949c19f75fb7eac84c1ac3d6c43b93c75026e9ab3ca618396794bd25b9d396b3deac13994557ade0026a30e2b5a7c8a1b")  # signatureinfo, bytes
+    1709036636,  # deadline, uint256
+    203314,  # voyageId, uint256
+    [2,3,4],  # destinations, uint16[]
+    Web3.to_bytes(hexstr="0x9f83f1bdc4255f9a81401c66eeac7004972f75e517c4552738b0e0d9cb2872b4"),  # data, bytes32
+    Web3.to_bytes(hexstr="0x2c744dd258d055e9aad4814247cdf79aefdeab3bc949f04a08c13ef394b2e6bb3b3a8ff76762691ee59c4d3a8475cd5113079e0bcdf3c21b7ef14d5f4822fa171c")  # signatureinfo, bytes
 ]
 
-encoded_data = Web3.solidity_keccak(
+encoded_data = encode_abi(
     ['uint256', 'uint256', 'uint16[]', 'bytes32', 'bytes'],
     values
 )
