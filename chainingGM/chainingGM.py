@@ -168,7 +168,7 @@ class ChainingGM:
                 raise Exception(f"Error: Response is {response}")
             isWalletBind = False
             if response.get("data", {}).get("user", {}).get("address"):
-                isWalletBind = Ture
+                isWalletBind = True
             log_and_print(f"getMyDetails successfully username = {alias} ")
         except Exception as e:
             excel_manager.update_info(alias, f"getMyDetails failed failed msg: {e}")
