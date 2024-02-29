@@ -181,8 +181,8 @@ class ChainingGM:
                 raise Exception(f"Error: Response is {response}")
             today_energy = response.get('data', {}).get('todayEnergy', 0)
             if today_energy != 0:
-                log_and_print(f"already singed successfully username = {alias}")
-                excel_manager.update_info(alias, "already sign successfully")
+                log_and_print(f"already singed successfully username = {alias} isWalletBind = {isWalletBind}")
+                excel_manager.update_info(alias, f"already sign successfully isWalletBind = {isWalletBind}")
                 return True
         except Exception as e:
             log_and_print(f"getpoints failed username = {alias}, msg: {e}")
