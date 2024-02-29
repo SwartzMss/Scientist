@@ -38,7 +38,7 @@ def log_message(text):
 
 def log_and_print(text):
     message = log_message(text)
-    with open(log_file_path, 'a') as log_file:
+    with open(log_file_path, 'a',encoding='utf-8') as log_file:
         print(message)
         log_file.write(message + '\n')
 

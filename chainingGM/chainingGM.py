@@ -19,7 +19,7 @@ from tools.UserInfo import UserInfo
 
 # 现在可以从tools目录导入excelWorker
 from tools.excelWorker import excelWorker
-
+from tools.switchProxy import ClashAPIManager
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
@@ -32,7 +32,7 @@ def log_message(text):
 
 def log_and_print(text):
     message = log_message(text)
-    with open(log_file_path, 'a') as log_file:
+    with open(log_file_path, 'a',encoding='utf-8') as log_file:
         print(message)
         log_file.write(message + '\n')
 
@@ -166,7 +166,10 @@ class ChainingGM:
             response = self.getMyDetails()
             if response.get('code') != 200:
                 raise Exception(f"Error: Response is {response}")
-            log_and_print(f"getMyDetails successfully username = {alias}")
+            isWalletBind = False
+            if response.get("data", {}).get("user", {}).get("address"):
+                isWalletBind = Ture
+            log_and_print(f"getMyDetails successfully username = {alias} ")
         except Exception as e:
             excel_manager.update_info(alias, f"getMyDetails failed failed msg: {e}")
             log_and_print(f"getMyDetails failed username = {alias}, msg: {e}")
@@ -210,8 +213,8 @@ class ChainingGM:
             response = self.sign()
             if response.get('code') != 200:
                 raise Exception(f"Error: Response is {response}")
-            log_and_print(f"sign successfully username = {alias}")
-            excel_manager.update_info(alias, "sign successfully")
+            log_and_print(f"sign successfully username = {alias} isWalletBind = {isWalletBind}")
+            excel_manager.update_info(alias, f"sign successfully isWalletBind = {isWalletBind}")
             return True
         except Exception as e:
             log_and_print(f"sign failed username = {alias}, msg: {e}")
@@ -224,7 +227,7 @@ if __name__ == '__main__':
     app = ChainingGM()
     UserInfoApp = UserInfo(log_and_print)
     retry_list = [] 
-
+    proxyApp = ClashAPIManager(logger = log_and_print)
     excel_manager = excelWorker("ChainingGM", log_and_print)
     credentials_list = UserInfoApp.find_user_outlook_token("ChainingGM")
     for credentials in credentials_list:
@@ -232,6 +235,14 @@ if __name__ == '__main__':
         username = credentials["username"]
         access_token = credentials["access_token"]
         refresh_token = credentials["refresh_token"]
+
+        proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
+        if not proxyName:
+            log_and_print(f"cannot find proxy username = {alias}")
+            continue
+        if proxyApp.change_proxy_until_success(proxyName) == False:
+            continue
+        time.sleep(5)   
         if(app.run(alias, username, access_token, refresh_token) == False):
             retry_list.append((alias, username, access_token, refresh_token))
 

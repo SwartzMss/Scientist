@@ -90,15 +90,36 @@ class ultiverseGM:
 
     def calculate_total_soul_from_json(self, json_strr):
 
-        soul_in_account = int(json_strr["data"]['soulInAccount'])
-        soul_in_wallets = int(json_strr["data"]['soulInWallets'])
+        soul_in_account = int(json_strr["data"]['soulInAccount'])// 1000000
+        soul_in_wallets = int(json_strr["data"]['soulInWallets'])// 1000000
         log_and_print(f"{alias} soul_in_account : {soul_in_account} soul_in_wallets {soul_in_wallets}")
-        # total_soul = soul_in_account + soul_in_wallets
-        final_result = soul_in_account // 1000000
+        total_soul = soul_in_account + soul_in_wallets
+        final_result = total_soul 
         return final_result
+
+    def post_info(self):
+        url = f"https://toolkit.ultiverse.io/api/user/info"
+        response = session.post(url, headers=self.headers, timeout=60)
+        data = response.json()
+        return data
+
+    def getAgentinfo(self):
+        url = f"https://pilot.ultiverse.io/api/register/agent-info"
+        response = session.get(url, headers=self.headers, timeout=60)
+        data = response.json()
+        return data
 
     def getProfile(self):
         url = f"https://pilot.ultiverse.io/api/profile"
+        response = session.get(url, headers=self.headers, timeout=60)
+        data = response.json()
+        return data
+
+    def getResultsStartDate(self):
+        current_date = datetime.datetime.now()
+        # 格式化日期为 "YYYY-MM-DD" 格式的字符串
+        formatted_date_string = current_date.strftime("%Y-%m-%d")
+        url = f"https://pilot.ultiverse.io/api/explore/results?startDate=2024-01-01&endDate={formatted_date_string}"
         response = session.get(url, headers=self.headers, timeout=60)
         data = response.json()
         return data
@@ -183,6 +204,22 @@ class ultiverseGM:
         # Assuming 'data' is a dictionary with a 'data' key containing a list of entries
         return sum(1 for entry in data['data'] if entry.get('explored', False))
 
+    def count_unexplored_entries(self,data):
+        # Assuming 'data' is a dictionary with a 'data' key containing a list of entries
+        return sum(1 for entry in data['data'] if not entry.get('explored', True))
+
+    def getCheck(self,voyageId):
+        url = f"https://pilot.ultiverse.io/api/explore/check?id={voyageId}"
+        response = session.get(url, headers=self.headers, timeout=60)
+        data = response.json()
+        return data
+
+    def checkScenes(self):
+        url = f"https://pilot.ultiverse.io/api/guide/check?scenes=EXPLORE"
+        response = session.get(url, headers=self.headers, timeout=60)
+        data = response.json()
+        return data
+
     def run(self,alias, account):
         self.alias = alias
         self.account = account
@@ -220,34 +257,68 @@ class ultiverseGM:
             return False     
 
         try:
+            response = self.post_info()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            log_and_print(f"{alias} post_info successfully")
+        except Exception as e:
+            log_and_print(f"{alias} post_info failed: {e}")
+            excel_manager.update_info(alias, f" post_info failed: {e}")
+            return False 
+
+        try:
+            response = self.getAgentinfo()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            log_and_print(f"{alias} getAgentinfo successfully")
+        except Exception as e:
+            log_and_print(f"{alias} getAgentinfo failed: {e}")
+            excel_manager.update_info(alias, f" getAgentinfo failed: {e}")
+            return False 
+
+        try:
             response = self.getProfile()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
-            soulPoints = self.calculate_total_soul_from_json(response)
-            log_and_print(f"{alias} getProfile successfully soulPoints = {soulPoints} ")
+            points = int(response["data"]['points'])
+            soulPointsFirst = self.calculate_total_soul_from_json(response)
+            log_and_print(f"{alias} first getProfile successfully")
         except Exception as e:
-            log_and_print(f"{alias} getProfile failed: {e}")
-            excel_manager.update_info(alias, f" getProfile failed: {e}")
+            log_and_print(f"{alias} first getProfile failed: {e}")
+            excel_manager.update_info(alias, f" first getProfile failed: {e}")
             return False 
+
+
+        try:
+            response = self.getResultsStartDate()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            log_and_print(f"{alias} getResultsStartDate successfully")
+        except Exception as e:
+            log_and_print(f"{alias} getResultsStartDate failed: {e}")
+            excel_manager.update_info(alias, f" getResultsStartDate failed: {e}")
+            return False 
+
 
         try:
             response = self.getList()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             time.sleep(3)
-            signdata = self.filter_tasks_within_soul_limit(response,soulPoints)
+            signdata = self.filter_tasks_within_soul_limit(response,soulPointsFirst)
             # 解析 JSON 字符串回 Python 对象
             signJason = json.loads(signdata)
             exploredNum = self.count_explored_entries(response)
+            unexploredNum = self.count_unexplored_entries(response)
             # 检查 worldIds 是否为空
             if not signJason['worldIds']:  # 这将检查列表是否为空
-                log_and_print(f"{alias} No tasks found within the soul limit or maybe tasks all been explored exploredNum = {exploredNum}")
-                excel_manager.update_info(alias, f" No tasks found within the soul limit or maybe tasks all been explored  exploredNum = {exploredNum}")
+                log_and_print(f"{alias} No tasks found! soulPointsFirst = {soulPointsFirst}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+                excel_manager.update_info(alias, f"No tasks found! soulPointsFirst = {soulPointsFirst} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
                 return True
-            log_and_print(f"{alias} getList successfully ")
+            log_and_print(f"{alias} first getList successfully ")
         except Exception as e:
-            log_and_print(f"{alias} getList failed: {e}")
-            excel_manager.update_info(alias, f" getList failed: {e}")
+            log_and_print(f"{alias} first getList failed: {e}")
+            excel_manager.update_info(alias, f" first getList failed: {e}")
             return False 
 
         try:
@@ -263,19 +334,56 @@ class ultiverseGM:
             
         try:
             exploreCallData = self.encode_ultiverse_data(response)
+            voyageId = response["data"]["voyageId"]
             response = self.explore_action(exploreCallData)
             if 'error' in response:
                 raise Exception(f"Error: {response}")
             response = self.getList()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
-            time.sleep(10)
-            exploredNum = self.count_explored_entries(response)
-            log_and_print(f"{alias} explore_action successfully exploredNum= {exploredNum}")
-            excel_manager.update_info(alias, f" explore_action successfully exploredNum= {exploredNum}")
+            log_and_print(f"{alias} explore_action successfully")
         except Exception as e:
             log_and_print(f"{alias} explore_action failed: {e}")
             excel_manager.update_info(alias, f" explore_action failed: {e}")
+            return False 
+
+        try:
+            response = self.getProfile()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            pointsFinal = int(response["data"]['points'])
+            soulPointsFinal = self.calculate_total_soul_from_json(response)
+            log_and_print(f"{alias} second getProfile successfully soulPoints")
+        except Exception as e:
+            log_and_print(f"{alias} second getProfile failed: {e}")
+            excel_manager.update_info(alias, f"second getProfile failed: {e}")
+            return False 
+
+        try:
+            response = self.getCheck(voyageId)
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            log_and_print(f"{alias} getCheck successfully")
+        except Exception as e:
+            log_and_print(f"{alias} getCheck failed: {e}")
+            excel_manager.update_info(alias, f" getCheck failed: {e}")
+            return False 
+
+        try:
+            response = self.getList()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            exploredNum = self.count_explored_entries(response)
+            unexploredNum = self.count_unexplored_entries(response)
+            response = self.checkScenes()
+            if response["success"] != True:
+                raise Exception(f" Error: {response}")
+            log_and_print(f"{alias} soulPointsFirst = {soulPointsFirst} soulPointsFinal = {soulPointsFinal}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+            excel_manager.update_info(alias, f"soulPointsFirst = {soulPointsFirst} soulPointsFinal = {soulPointsFinal} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+            return True
+        except Exception as e:
+            log_and_print(f"{alias} first getList failed: {e}")
+            excel_manager.update_info(alias, f" first getList failed: {e}")
             return False 
 
 
