@@ -269,6 +269,7 @@ class ultiverseGM:
             response = self.getList()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
+            time.sleep(10)
             exploredNum = self.count_explored_entries(response)
             log_and_print(f"{alias} explore_action successfully exploredNum= {exploredNum}")
             excel_manager.update_info(alias, f" explore_action successfully exploredNum= {exploredNum}")
