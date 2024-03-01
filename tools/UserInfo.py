@@ -60,7 +60,7 @@ class UserInfo:
             self.logger(f"Missing key in JSON data: {e}")
         except FileNotFoundError:
             self.logger(f"File '{accountfile_path}' not found")
-
+        random.shuffle(credentials_list)  # 打乱顺序
         return credentials_list
 
 
@@ -131,7 +131,7 @@ class UserInfo:
             self.logger(f"Missing key in JSON data: {e}")
         except FileNotFoundError:
             self.logger(f"File '{accountfile_path}' not found")
-
+        random.shuffle(credentials_list)  # 打乱顺序
         return credentials_list
 
     def find_user_credentials_for_app(self, exclude=None):
@@ -162,5 +162,5 @@ class UserInfo:
             self.logger(f"Missing key in JSON data: {e}")
         except FileNotFoundError:
             self.logger(f"File '{accountfile_path}' not found")
-
+        random.shuffle(credentials_list)  # 打乱顺序
         return credentials_list
