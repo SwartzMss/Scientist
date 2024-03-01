@@ -312,7 +312,7 @@ class ultiverseGM:
             # 检查 worldIds 是否为空
             if not signJason['worldIds']:  # 这将检查列表是否为空
                 log_and_print(f"{alias} soulPoints = {soulPoints}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
-                excel_manager.update_info(alias, f"soulPoints = {soulPoints} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+                excel_manager.update_info(alias, f"No more task has been explored! soulPoints = {soulPoints} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
                 return True
             log_and_print(f"{alias} first getList successfully ")
         except Exception as e:
@@ -325,7 +325,6 @@ class ultiverseGM:
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             log_and_print(f"{alias} sign successfully ")
-            excel_manager.update_info(alias, f" sign successfully")
         except Exception as e:
             log_and_print(f"{alias} sign failed: {e}")
             excel_manager.update_info(alias, f" sign failed: {e}")
@@ -378,19 +377,20 @@ class ultiverseGM:
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             log_and_print(f"{alias} soulPoints = {soulPoints}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
-            if soulPointsForExplored > 50 and unexploredNum > 0 :
+            if isRetry = False and soulPointsForExplored > 50 and unexploredNum > 0 :
                 log_and_print(f"{alias} need retry for switch another wallet")
                 return False
-            excel_manager.update_info(alias, f"soulPoints = {soulPoints} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+            excel_manager.update_info(alias, f"some tasks have been explored! soulPoints = {soulPoints} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
             return True
         except Exception as e:
-            log_and_print(f"{alias} first getList failed: {e}")
-            excel_manager.update_info(alias, f" first getList failed: {e}")
+            log_and_print(f"{alias} final getList failed: {e}")
+            excel_manager.update_info(alias, f" final getList failed: {e}")
             return False 
 
 
 if __name__ == '__main__':
     session = requests.Session()
+    isRetry = False
     app = ultiverseGM()
     proxyApp = ClashAPIManager(logger = log_and_print)
     failed_list = []
@@ -415,6 +415,7 @@ if __name__ == '__main__':
 
     if len(retry_list) != 0:
         log_and_print("start retry faile case")
+        isRetry = True
         time.sleep(10)
 
     for alias, account in retry_list:
