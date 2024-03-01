@@ -89,13 +89,12 @@ class ultiverseGM:
         return data
 
     def calculate_total_soul_from_json(self, json_strr):
-
         soul_in_account = int(json_strr["data"]['soulInAccount'])// 1000000
         soul_in_wallets = int(json_strr["data"]['soulInWallets'])// 1000000
         log_and_print(f"{alias} soul_in_account : {soul_in_account} soul_in_wallets {soul_in_wallets}")
         total_soul = soul_in_account + soul_in_wallets
-        final_result = total_soul 
-        return final_result
+        final_result = max(soul_in_account, soul_in_wallets)
+        return final_result,total_soul
 
     def post_info(self):
         url = f"https://toolkit.ultiverse.io/api/user/info"
@@ -281,7 +280,7 @@ class ultiverseGM:
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             points = int(response["data"]['points'])
-            soulPointsFirst = self.calculate_total_soul_from_json(response)
+            soulPointsForExplored, soulPoints = self.calculate_total_soul_from_json(response)
             log_and_print(f"{alias} first getProfile successfully")
         except Exception as e:
             log_and_print(f"{alias} first getProfile failed: {e}")
@@ -304,16 +303,16 @@ class ultiverseGM:
             response = self.getList()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
-            time.sleep(3)
-            signdata = self.filter_tasks_within_soul_limit(response,soulPointsFirst)
+            time.sleep(2)
+            signdata = self.filter_tasks_within_soul_limit(response,soulPointsForExplored)
             # 解析 JSON 字符串回 Python 对象
             signJason = json.loads(signdata)
             exploredNum = self.count_explored_entries(response)
             unexploredNum = self.count_unexplored_entries(response)
             # 检查 worldIds 是否为空
             if not signJason['worldIds']:  # 这将检查列表是否为空
-                log_and_print(f"{alias} No tasks found! soulPointsFirst = {soulPointsFirst}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
-                excel_manager.update_info(alias, f"No tasks found! soulPointsFirst = {soulPointsFirst} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+                log_and_print(f"{alias} soulPoints = {soulPoints}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+                excel_manager.update_info(alias, f"soulPoints = {soulPoints} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
                 return True
             log_and_print(f"{alias} first getList successfully ")
         except Exception as e:
@@ -352,7 +351,7 @@ class ultiverseGM:
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             pointsFinal = int(response["data"]['points'])
-            soulPointsFinal = self.calculate_total_soul_from_json(response)
+            soulPointsForExplored, soulPoints = self.calculate_total_soul_from_json(response)
             log_and_print(f"{alias} second getProfile successfully soulPoints")
         except Exception as e:
             log_and_print(f"{alias} second getProfile failed: {e}")
@@ -378,8 +377,11 @@ class ultiverseGM:
             response = self.checkScenes()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
-            log_and_print(f"{alias} soulPointsFirst = {soulPointsFirst} soulPointsFinal = {soulPointsFinal}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
-            excel_manager.update_info(alias, f"soulPointsFirst = {soulPointsFirst} soulPointsFinal = {soulPointsFinal} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+            log_and_print(f"{alias} soulPoints = {soulPoints}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
+            if soulPointsForExplored > 50 and unexploredNum > 0 :
+                log_and_print(f"{alias} need retry for switch another wallet")
+                return False
+            excel_manager.update_info(alias, f"soulPoints = {soulPoints} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
             return True
         except Exception as e:
             log_and_print(f"{alias} first getList failed: {e}")
