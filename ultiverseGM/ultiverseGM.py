@@ -117,8 +117,11 @@ class ultiverseGM:
     def getResultsStartDate(self):
         current_date = datetime.datetime.now()
         # 格式化日期为 "YYYY-MM-DD" 格式的字符串
-        formatted_date_string = current_date.strftime("%Y-%m-%d")
-        url = f"https://pilot.ultiverse.io/api/explore/results?startDate=2024-01-01&endDate={formatted_date_string}"
+        current_date_string = current_date.strftime("%Y-%m-%d")
+        first_day_of_last_month = (current_date.replace(day=1) - datetime.timedelta(days=1)).replace(day=1)
+        # 格式化日期为 "YYYY-MM-DD" 格式的字符串
+        first_day_of_last_month_string = first_day_of_last_month.strftime("%Y-%m-%d")
+        url = f"https://pilot.ultiverse.io/api/explore/results?startDate={first_day_of_last_month_string}&endDate={current_date_string}"
         response = session.get(url, headers=self.headers, timeout=60)
         data = response.json()
         return data
@@ -377,7 +380,7 @@ class ultiverseGM:
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             log_and_print(f"{alias} soulPoints = {soulPoints}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
-            if isRetry = False and soulPointsForExplored > 50 and unexploredNum > 0 :
+            if isRetry == False and soulPointsForExplored > 50 and unexploredNum > 0 :
                 log_and_print(f"{alias} need retry for switch another wallet")
                 return False
             excel_manager.update_info(alias, f"some tasks have been explored! soulPoints = {soulPoints} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
