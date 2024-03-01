@@ -1,5 +1,6 @@
 import time
 import os
+from web3.exceptions import TransactionNotFound
 from eth_account.messages import encode_defunct
 from web3 import Web3
 import web3
@@ -24,7 +25,7 @@ from tools.switchProxy import ClashAPIManager
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
-log_file_path = rf'\\192.168.3.142\SuperWind\Study\bearGM_{current_time}.log'
+log_file_path = rf'\\192.168.3.142\SuperWind\Study\bearSwap_{current_time}.log'
 
 
 def log_message(text):
@@ -2937,11 +2938,14 @@ def do_swap(address,
     #
     log_and_print(f'发送兑换交易哈希：{transaction_hash},等待240s获取交易结果')
     time.sleep(240)
-    receipt = web3App.eth.get_transaction_receipt(transaction_hash)
-    if receipt['status'] == 1:
-        log_and_print('交易成功')
-    else:
-        log_and_print(f'交易失败，原因：{receipt}')
+    try:
+        receipt = web3App.eth.get_transaction_receipt(transaction_hash)
+        if receipt.status == 1:  # 确保使用receipt.status而不是receipt['status']来访问状态
+            log_and_print('交易成功')
+        else:
+            log_and_print(f'交易失败，原因：{receipt}')
+    except TransactionNotFound:
+        log_and_print(f"找不到交易: '{transaction_hash}'，可能是交易超时或未被网络确认。")
 
 
 def do_approve(address,
@@ -3067,13 +3071,16 @@ def mint_honey(address,
     #
     log_and_print(f'发送兑换交易哈希：{transaction_hash},等待200s获取交易结果')
     time.sleep(200)
-    receipt = web3App.eth.get_transaction_receipt(transaction_hash)
-    if receipt['status'] == 1:
-        log_and_print('交易成功')
-    else:
-        log_and_print(f'交易失败，原因：{receipt}')
-        exit('失败，停止操作')
-
+    try:
+        receipt = web3App.eth.get_transaction_receipt(transaction_hash)
+        if receipt['status'] == 1:
+            log_and_print('交易成功')
+        else:
+            log_and_print(f'交易失败，原因：{receipt}')
+            raise TransactionFailedException('失败，停止操作')
+    except TransactionFailedException as e:
+        log_and_print(str(e))
+        exit()
 
 def up_log(address, status):
     requests.get(f'http://38.54.119.53:47387/api/index/update_bera_address?address={address}&status={status}')
@@ -3166,12 +3173,12 @@ def do_supply(address,
 
 if __name__ == '__main__':
     UserInfoApp = UserInfo(log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_eth("bearSwap")
+    credentials_list = UserInfoApp.find_user_credentials_for_eth("bearGM")
     for credentials in credentials_list:
         alias = credentials["alias"]
         address_key = credentials["key"]
         address =  web3.Account.from_key(address_key).address
-
+        log_and_print(f'start running alias {alias}')
         stg_allowance = get_allowance(address, '0x09ec711b81cD27A6466EC40960F2f8D85BB129D9',
                                     '0x6581e59A1C8dA66eD0D313a0d4029DcE2F746Cc5', honey_abi)
         # 授权金额
