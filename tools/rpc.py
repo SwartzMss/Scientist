@@ -76,8 +76,8 @@ class Rpc:
         try:
             res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
             return res.json()  # (int(res.json()['result'], 16)) / math.pow(10, 18)
-        except SSLError as e:
-            print(f"get_balance SSL Error: {e}")
+        except Exception as e:
+            print(f"get_balance Exception Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None

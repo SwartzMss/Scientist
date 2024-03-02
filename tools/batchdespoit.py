@@ -27,8 +27,9 @@ def log_and_print(text):
 
 #BNB https://bsc-dataseed.binance.org/ 56
 #openbnb https://opbnb-mainnet-rpc.bnbchain.org 204
+#matic https://rpc-mainnet.maticvigil.com 137
 class BatchDeposit:
-    def __init__(self, private_key, rpc_url='https://bsc-dataseed.binance.org/', chain_id=56):
+    def __init__(self, private_key, rpc_url='https://rpc-mainnet.maticvigil.com', chain_id=137):
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = self.web3.eth.account.from_key(private_key)
@@ -84,13 +85,13 @@ class BatchDeposit:
             return False  # 处理其他可能的异常
 
 if __name__ == "__main__":
-    swartz_key = "aaa"
+    swartz_key = "xx"
     # 初始化UserInfoApp等
     UserInfoApp = UserInfo(log_and_print)
     credentials_list = UserInfoApp.find_user_credentials_for_eth("swartz")
 
     for credentials in credentials_list:
-        time.sleep(2)
+        time.sleep(5)
         alias = credentials["alias"]
         key = credentials["key"]
         account = web3.Account.from_key(key)    
@@ -100,12 +101,12 @@ if __name__ == "__main__":
         log_and_print(f"alias {alias}, gas_price: {gas_price}")
         balance = app.get_balance(account.address)
         log_and_print(f"alias {alias}, balance: {balance}")
-        if balance == None or balance >= Decimal("0.005"):
+        if balance == None or balance >= Decimal("0.4"):
             continue
         # 使用Swartz账户向每个用户发送转账
-        tx_hash = app.send_transaction_from_swartz(swartz_key, account.address, 0.005)
+        tx_hash = app.send_transaction_from_swartz(swartz_key, account.address, 0.4)
         log_and_print(f"alias {alias}, 交易哈希: {tx_hash}")
-        time.sleep(5)  # 控制请求速度
+        time.sleep(10)  # 控制请求速度
         is_success = app.check_transaction_status(tx_hash)
         if is_success:
             print("交易成功！")

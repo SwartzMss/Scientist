@@ -172,7 +172,7 @@ class XplusGM:
                     log_and_print(f"need relogin: {self.alias}")
                     excel_manager.update_info(self.alias, "need relogin")
                     error_occurred = True             	
-
+            
             if not error_occurred:
                 if self.find_and_click_element('//android.widget.Button[@text="領取"]') == True:
                     log_and_print(f"claimed successfully: {self.alias}")
@@ -180,6 +180,8 @@ class XplusGM:
                         log_and_print(f"find exit claim failed: {self.alias}")
                         excel_manager.update_info(self.alias, "find exit claim failed")
                         error_occurred = True
+                else:
+                    log_and_print(f"{self.alias} cannot find claim ")
             if not error_occurred:
                 if self.find_and_click_element('//android.widget.Button[@text="開啟挖礦"]') == True:
                     log_and_print(f"recheck successfully: {self.alias}")

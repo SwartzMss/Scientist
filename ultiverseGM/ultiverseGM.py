@@ -380,7 +380,7 @@ class ultiverseGM:
             if response["success"] != True:
                 raise Exception(f" Error: {response}")
             log_and_print(f"{alias} soulPoints = {soulPoints}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
-            if isRetry == False and soulPointsForExplored > 50 and unexploredNum > 0 :
+            if isRetry == False and soulPointsForExplored >= 50 and unexploredNum > 0 :
                 log_and_print(f"{alias} need retry for switch another wallet")
                 return False
             excel_manager.update_info(alias, f"some tasks have been explored! soulPoints = {soulPoints} points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
