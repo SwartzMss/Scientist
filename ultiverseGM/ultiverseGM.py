@@ -109,7 +109,7 @@ class ultiverseGM:
         return data
 
     def getProfile(self):
-        url = f"https://pilot.ultiverse.io/api/profile"
+        url = f"https://pml.ultiverse.io/api/profile"
         response = session.get(url, headers=self.headers, timeout=60)
         data = response.json()
         return data
@@ -121,13 +121,13 @@ class ultiverseGM:
         first_day_of_last_month = (current_date.replace(day=1) - datetime.timedelta(days=1)).replace(day=1)
         # 格式化日期为 "YYYY-MM-DD" 格式的字符串
         first_day_of_last_month_string = first_day_of_last_month.strftime("%Y-%m-%d")
-        url = f"https://pilot.ultiverse.io/api/explore/results?startDate={first_day_of_last_month_string}&endDate={current_date_string}"
+        url = f"https://pml.ultiverse.io/api/explore/results?startDate={first_day_of_last_month_string}&endDate={current_date_string}"
         response = session.get(url, headers=self.headers, timeout=60)
         data = response.json()
         return data
 
     def getList(self):
-        url = f"https://pilot.ultiverse.io/api/explore/list"
+        url = f"https://pml.ultiverse.io/api/explore/list"
         response = session.get(url, headers=self.headers, timeout=60)
         data = response.json()
         return data
@@ -279,6 +279,7 @@ class ultiverseGM:
             return False 
 
         try:
+            self.headers.pop('Cookie', None)
             response = self.getProfile()
             if response["success"] != True:
                 raise Exception(f" Error: {response}")

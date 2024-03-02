@@ -59,12 +59,17 @@ class lavaRpc:
         random.shuffle(result)  # Shuffle the list to break the original order
         return result
 
-    def parse_address_file(self):
+    def parse_address_file(self, max_num = 800):
         with open(address_file_path, 'r') as file:
-            # Read lines and strip newline characters
+            # 读取所有行并去除换行符
             addresses = [line.strip() for line in file.readlines()]
+        # 打乱地址列表
         random.shuffle(addresses)
-        return addresses
+        # 如果提供了max_num且小于地址列表长度，则截取列表
+        if max_num is not None:
+            return addresses[:max(max_num, len(addresses))]
+        else:
+            return addresses
 
     def get_balance(self, address):
         """获取指定地址的ETH余额。"""
@@ -94,6 +99,7 @@ class lavaRpc:
                 succeedNum = succeedNum + 1
             else:
                 sleepValue = sleepValue + 0.5
+        log_and_print(f"{alias} succeedNum = {succeedNum}")
         excel_manager.update_info(alias, f" succeedNum: {succeedNum}")
 
 if __name__ == "__main__":
