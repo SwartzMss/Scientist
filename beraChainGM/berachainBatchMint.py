@@ -213,6 +213,7 @@ class BerachainBatchMint:
         for alias, key, tx_hash in self.QueueForApprovalResult:
             log_and_print(f"{alias} start checking transaction status for Approve")
             if tx_hash == None:
+                log_and_print(f"{alias} no need check Approve")
                 self.QueueForMint.append((alias, key))
                 continue
             code,msg = self.check_transaction_status(tx_hash)
