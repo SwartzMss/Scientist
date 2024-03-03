@@ -6,15 +6,14 @@ import math
 import sys
 from decimal import Decimal
 import web3
-import requests
 import random
 import datetime
 import json
-
+from eth_abi import encode
 from enum import Enum
 from typing import List, Tuple, NamedTuple, Union
 from dataclasses import dataclass
-
+from requests.exceptions import SSLError
 import os
 # 获取当前脚本的绝对路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -35,49 +34,51 @@ def log_and_print(text):
 class BerachainBatchSwap:
     def __init__(self, private_key, rpc_url='https://artio.rpc.berachain.com', chain_id=80085):
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
-        self.private_key = private_key
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = self.web3.eth.account.from_key(private_key) 
-        self.chain_id = chain_id
+        self.headers = {
+            'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
+            'Accept': 'application/json, text/plain, */*',
+            'Connection': 'keep-alive',
+            'Content-Type': 'application/json',
 
-    def encode_swap_data(self, json_data):
-        class SwapKind(Enum):
-            GIVEN_IN = 0
-            GIVEN_OUT = 1
+        }
 
-        @dataclass
-        class BatchSwapStep:
-            poolId: types.ChecksumAddress  # 使用ChecksumAddress类型来表示地址
-            assetIn: types.ChecksumAddress
-            amountIn: int  # uint256在Python中可以用int表示，因为Python的int是无限精度的
-            assetOut: types.ChecksumAddress
-            amountOut: int
-            userData: bytes  # Solidity的bytes类型在Python中用bytes表示
-
-        # 这个元组类型表示了你描述的整体结构
-        SwapDefinition = Tuple[SwapKind, List[BatchSwapStep], int]
-            # 转换十六进制字符串为字节串
-            data_bytes = Web3.to_bytes(hexstr=data_hex)
-            signatureinfo_bytes = Web3.to_bytes(hexstr=signatureinfo_hex)
-    
-        # 定义参数值和它们的类型
+    def encode_approve_data(self, amount):
+        spender = "0x09ec711b81cD27A6466EC40960F2f8D85BB129D9"
+        amountValue = Web3.to_wei(amount, 'ether')
         values = [
-            deadline,  # deadline, uint256
-            voyageId,  # voyageId, uint256
-            destinations,  # destinations, uint16[]
-            data_bytes,  # data, bytes32
-            signatureinfo_bytes  # signatureinfo, bytes
+            spender,
+            amountValue, 
         ]
-        types = ['uint256', 'uint256', 'uint16[]', 'bytes32', 'bytes']
+        types = ['address', 'uint256']
         
-        # 使用eth_abi进行编码
         encoded_data = encode(types, values)
-        
-        # 返回编码后的十六进制字符串
         return encoded_data.hex()
 
+    def encode_swap_data(self,  batch_swap_steps, deadline = 99999999, swap_kind = 0):
+        tolerance_slippage = 0.02
+        swap_steps_encoded = [
+            (
+                Web3.to_checksum_address(step["poolId"]),
+                Web3.to_checksum_address("0x0000000000000000000000000000000000000000") if index == 0 else Web3.to_checksum_address(step["assetIn"]),
+                step["amountIn"],
+                Web3.to_checksum_address(step["assetOut"]),
+                0 if index < len(batch_swap_steps) - 1 else int(step["amountOut"] * (1 - tolerance_slippage)),  # 在最后一个步骤应用2%的滑点
+                step["userData"]
+            )
+            for index, step in enumerate(batch_swap_steps)
+        ]
+
+        encoded_data = encode(
+            ["uint8", "(address,address,uint256,address,uint256,bytes)[]", "uint256"],
+            [swap_kind, swap_steps_encoded, deadline]
+        )
+        encoded_data_hex = encoded_data.hex()
+        log_and_print(f"encoded_data_hex = {encoded_data_hex}")
+        return encoded_data_hex
+
     def get_balance(self):
-        """获取指定地址的BERA余额."""
         balance_result = self.rpc.get_balance(self.account.address)
         if balance_result == None:
             return None
@@ -85,30 +86,68 @@ class BerachainBatchSwap:
         balance_bera = self.web3.from_wei(balance_wei, 'ether')
         return Decimal(balance_bera)
 
-    def swap_bera_to_stgusdc(self):
+    def parse_swap_steps_from_json(self, json_str):
+        log_and_print(f"json_str = {json_str}")
+        # 从解析后的数据中构造batch_swap_steps列表
+        batch_swap_steps = [
+            {
+                "poolId": step["pool"],
+                "assetIn": step["assetIn"],
+                "amountIn": int(step["amountIn"]),
+                "assetOut": step["assetOut"],
+                "amountOut": int(step["amountOut"]),
+                "userData": b""  # 假设userData始终为空
+            }
+            for step in json_str.get("steps", [])  # 使用get以避免KeyError，如果没有"steps"则默认为空列表
+        ]
+
+        return batch_swap_steps
+
+    def ge_response_for_swap_bera_to_stgusdc(self, amount):
+        amountValue =  Web3.to_wei(amount, 'ether')
+        session = requests.Session()
+        url = f"https://artio-80085-dex-router.berachain.com/dex/route?quoteAsset=0x6581e59A1C8dA66eD0D313a0d4029DcE2F746Cc5&baseAsset=0x5806E416dA447b267cEA759358cF22Cc41FAE80F&amount={amountValue}&swap_type=given_in"
+        response = session.get(url, headers=self.headers, timeout=60)
+        return response
+
+    def swap_bera_to_stgusdc(self, amount = 0.1):
+        try:
+            response = self.ge_response_for_swap_bera_to_stgusdc(amount)
+            if response.status_code != 200:
+                raise Exception(f" Error: {response.status_code }")
+            log_and_print(f"{alias} ge_response_for_swap_bera_to_stgusdc successfully")
+        except Exception as e:
+            log_and_print(f"{alias} ge_response_for_swap_bera_to_stgusdc failed: {e}")
+            excel_manager.update_info(alias, f" ge_response_for_swap_bera_to_stgusdc failed: {e}")
+            return False 
+
+        try:
+            data = response.json()
+            batch_swap_steps = self.parse_swap_steps_from_json(data)
+            param = self.encode_swap_data(batch_swap_steps)
+            log_and_print(f"{alias} encode_swap_data successfully")
+        except Exception as e:
+            log_and_print(f"{alias} encode_swap_data failed: {e}")
+            excel_manager.update_info(alias, f" encode_swap_data failed: {e}")
+            return False 
+        
         __contract_addr = "0x0d5862FDbdd12490f9b4De54c236cff63B038074"
         MethodID="0xe3414c00" 
-        param_1="0000000000000000000000000000000000000000000000000000000000000000"
-        param_2="0000000000000000000000000000000000000000000000000000000000000060"
-        param_3="0000000000000000000000000000000000000000000000000000000005f5e0ff"
-        param_4="0000000000000000000000000000000000000000000000000000000000000001"
-        param_5="0000000000000000000000000000000000000000000000000000000000000020"
-        param_6="000000000000000000000000a88572f08f79d28b8f864350f122c1cc0abb0d96"
-        param_7="0000000000000000000000000000000000000000000000000000000000000000"
-        param_8="000000000000000000000000000000000000000000000000016345785d8a0000"
-        param_9="0000000000000000000000007eeca4205ff31f947edbd49195a7a88e6a91161b"
-        param_10="000000000000000000000000000000000000000000000001a56b2fda1b140d3b"
-        param_11="00000000000000000000000000000000000000000000000000000000000000c0"
-        param_12="0000000000000000000000000000000000000000000000000000000000000000"
-
-
-        data = MethodID+param_1+param_2+param_3+param_4+param_5+param_6+param_7+param_8+param_9+param_10+param_11+param_12
-        value = 0.1 #转账的数量
+        data = MethodID + param
         BALANCE_PRECISION = math.pow(10, 18)  # 主币精度，18位
-        amount = int(value * BALANCE_PRECISION)  # 计算要发送的amount
-        res = self.rpc.transfer(
-            self.account, __contract_addr, amount, self.gaslimit, data=data)
-        return res
+        value = int(amount * BALANCE_PRECISION)  # 计算要发送的amount
+        try:
+            response = self.rpc.transfer(
+                self.account, __contract_addr, value, 50000, data=data)
+            if 'error' in response:
+                raise Exception(f"Error: {response}")
+            hasResult = response["result"]
+            log_and_print(f"{alias} swap_bera_to_stgusdc.transfer successfully hash = {hasResult}")
+        except Exception as e:
+            log_and_print(f"{alias} swap_bera_to_stgusdc.transfer failed: {e}")
+            excel_manager.update_info(alias, f" swap_bera_to_stgusdc.transfer failed: {e}")
+            return False 
+        return True
 
     def check_transaction_status(self, tx_hash):
         """检查交易的状态"""
@@ -128,18 +167,15 @@ if __name__ == "__main__":
     for credentials in credentials_list:
         alias = credentials["alias"]
         key = credentials["key"]
-        bera_transfer = BerachainBatchTransfer(private_key=key)
-        balance = bera_transfer.get_balance()
+        bera_swap = BerachainBatchSwap(private_key=key)
+        balance = bera_swap.get_balance()
         log_and_print(f"alias {alias}, balance: {balance}")
         time.sleep(5)
-        if balance == None:
-            continue
-        continue # 这边只是check balance
-        if balance <= Decimal("0.2"):
+        if balance == None or balance <= Decimal("0.2"):
             log_and_print(f"alias {alias}, too less balance skipped")
             time.sleep(5)
             continue
-        tx_hash = bera_transfer.send_transaction_to_swartz(balance - Decimal("0.01"))
+        tx_hash = bera_swap.swap_bera_to_stgusdc()
         log_and_print(f"alias {alias}, 交易哈希: {tx_hash}")
         time.sleep(5)
         # is_success = bera_transfer.check_transaction_status(tx_hash)

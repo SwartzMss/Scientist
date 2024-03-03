@@ -28,3 +28,4 @@ JP09 https://eth1.lava.build/lava-referer-12862fce-0b4e-4792-81bd-3c900ed47db5/
 ZAL https://eth1.lava.build/lava-referer-af830656-4ca6-4b1c-b097-1e3c8590006c/
 SYF https://eth1.lava.build/lava-referer-15b097e9-a658-4ebd-9d4a-8044904ddd0d/
 ZYM https://eth1.lava.build/lava-referer-12f5af71-fd01-4ccc-9bbb-6495ffbb9f9b/
+JP07 https://eth1.lava.build/lava-referer-80cd5848-2cbb-4ca0-977f-02befa56b823/

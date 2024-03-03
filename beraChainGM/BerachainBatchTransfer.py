@@ -30,7 +30,6 @@ def log_and_print(text):
 class BerachainBatchTransfer:
     def __init__(self, private_key, rpc_url='https://artio.rpc.berachain.com', chain_id=80085):
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
-        self.private_key = private_key
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = self.web3.eth.account.from_key(private_key) 
         self.chain_id = chain_id

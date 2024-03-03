@@ -59,17 +59,14 @@ class lavaRpc:
         random.shuffle(result)  # Shuffle the list to break the original order
         return result
 
-    def parse_address_file(self, max_num = 800):
+    def parse_address_file(self, max_num = 500):
         with open(address_file_path, 'r') as file:
             # 读取所有行并去除换行符
             addresses = [line.strip() for line in file.readlines()]
         # 打乱地址列表
         random.shuffle(addresses)
-        # 如果提供了max_num且小于地址列表长度，则截取列表
-        if max_num is not None:
-            return addresses[:max(max_num, len(addresses))]
-        else:
-            return addresses
+        return addresses[:min(max_num, len(addresses))]
+
 
     def get_balance(self, address):
         """获取指定地址的ETH余额。"""
@@ -95,6 +92,7 @@ class lavaRpc:
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         addressList = self.parse_address_file()
         for address in addressList:
+            time.sleep(sleepValue)
             if None != self.get_balance(address):
                 succeedNum = succeedNum + 1
             else:
