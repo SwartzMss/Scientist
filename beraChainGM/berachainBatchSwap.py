@@ -21,21 +21,32 @@ script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
 sys.path.append(parent_dir)
 from tools.UserInfo import UserInfo
+from tools.excelWorker import excelWorker
 # 现在可以从tools目录导入Rpc
 from tools.rpc import Rpc
+# 获取当前时间并格式化为字符串
+current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 def log_message(text):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return f"{timestamp} - {text}"
+# 构建新的日志文件路径，包含当前时间
+log_file_path = rf'\\192.168.3.142\SuperWind\Study\BerachainBatchSwap_{current_time}.log'
 
 def log_and_print(text):
     message = log_message(text)
-    print(message)
+    with open(log_file_path, 'a',encoding='utf-8') as log_file:
+        print(message)
+        log_file.write(message + '\n')
+
 
 class BerachainBatchSwap:
-    def __init__(self, private_key, rpc_url='https://artio.rpc.berachain.com', chain_id=80085):
+    def __init__(self, rpc_url='https://artio.rpc.berachain.com', chain_id=80085):
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
+        self.gaslimit = 350000
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
-        self.account = self.web3.eth.account.from_key(private_key) 
+        self.account = None
+        self.transactions = []
+        self.gasprice = int(self.rpc.get_gas_price()['result'], 16) * 5
         self.headers = {
             'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -44,20 +55,8 @@ class BerachainBatchSwap:
 
         }
 
-    def encode_approve_data(self, amount):
-        spender = "0x09ec711b81cD27A6466EC40960F2f8D85BB129D9"
-        amountValue = Web3.to_wei(amount, 'ether')
-        values = [
-            spender,
-            amountValue, 
-        ]
-        types = ['address', 'uint256']
-        
-        encoded_data = encode(types, values)
-        return encoded_data.hex()
-
     def encode_swap_data(self,  batch_swap_steps, deadline = 99999999, swap_kind = 0):
-        tolerance_slippage = 0.02
+        tolerance_slippage = 0.06
         swap_steps_encoded = [
             (
                 Web3.to_checksum_address(step["poolId"]),
@@ -110,7 +109,16 @@ class BerachainBatchSwap:
         response = session.get(url, headers=self.headers, timeout=60)
         return response
 
-    def swap_bera_to_stgusdc(self, amount = 0.1):
+    def swap_bera_to_stgusdc(self, alias, private_key, amount = 0.1): 
+        self.account = self.web3.eth.account.from_key(private_key) 
+        balance = bera_swap.get_balance()
+        log_and_print(f"alias {alias}, balance: {balance}")
+        if balance == None or balance <= Decimal("0.6"):
+            log_and_print(f"alias {alias}, too less balance skipped")
+            excel_manager.update_info(alias, f" too less balance->{balance} skipped")
+            time.sleep(5)
+            return
+
         try:
             response = self.ge_response_for_swap_bera_to_stgusdc(amount)
             if response.status_code != 200:
@@ -138,48 +146,59 @@ class BerachainBatchSwap:
         value = int(amount * BALANCE_PRECISION)  # 计算要发送的amount
         try:
             response = self.rpc.transfer(
-                self.account, __contract_addr, value, 50000, data=data)
+                self.account, __contract_addr, value, self.gaslimit, self.gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"Error: {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} swap_bera_to_stgusdc.transfer successfully hash = {hasResult}")
+            self.transactions.append((alias, hasResult))
+
         except Exception as e:
             log_and_print(f"{alias} swap_bera_to_stgusdc.transfer failed: {e}")
             excel_manager.update_info(alias, f" swap_bera_to_stgusdc.transfer failed: {e}")
             return False 
         return True
 
-    def check_transaction_status(self, tx_hash):
-        """检查交易的状态"""
-        receipt = self.web3.eth.get_transaction_receipt(tx_hash)
-        # 在某些Web3库版本中，状态为布尔值。在其他版本中，状态为十六进制数。
-        if receipt is not None:
-            # 成功的交易状态为1，失败的为0
-            return receipt.status == 1
-        else:
-            # 如果没有找到收据，交易可能还在挂起状态
-            return False
+    def check_all_transaction(self):
+        for alias, tx_hash in self.transactions:
+            log_and_print(f"{alias} start checking transaction status")
+            code,msg = self.check_transaction_status(tx_hash)
+            log_and_print(f"{alias} tx_hash = {tx_hash} code = {code} msg = {msg}")
+            excel_manager.update_info(alias, f"tx_hash = {tx_hash} code = {code} msg = {msg}")
+
+    def check_transaction_status(self, tx_hash, timeout=300, interval=30):
+        """检查交易的状态，返回是否确认和交易状态。使用计数器实现超时。"""
+        max_attempts = timeout // interval  # 计算最大尝试次数
+        attempts = 0  # 初始化尝试次数计数器
+
+        while attempts < max_attempts:  # 循环直到达到最大尝试次数
+            try:
+                receipt = self.web3.eth.get_transaction_receipt(tx_hash)                
+                if receipt is not None:
+                    if receipt.status == 1:
+                        return True, "success"  # 交易已确认且成功
+                    else:
+                        return True, "failure"  # 交易已确认但失败
+            except Exception as e:
+                log_and_print(f"Error checking transaction status: {e}")
+            
+            time.sleep(interval)  # 等待一段时间再次检查
+            attempts += 1  # 更新尝试次数
+
+        # 超时后返回False，表示交易状态未知或未确认，状态为挂起
+        return False, "pending"
+
 
 if __name__ == "__main__":
     UserInfoApp = UserInfo(log_and_print)
     credentials_list = UserInfoApp.find_user_credentials_for_eth("bearChainGM")
-
+    excel_manager = excelWorker("BerachainBatchSwap", log_and_print)
+    bera_swap = BerachainBatchSwap()
+    amount = 0.1
     for credentials in credentials_list:
         alias = credentials["alias"]
         key = credentials["key"]
-        bera_swap = BerachainBatchSwap(private_key=key)
-        balance = bera_swap.get_balance()
-        log_and_print(f"alias {alias}, balance: {balance}")
+        bera_swap.swap_bera_to_stgusdc(alias, key)
         time.sleep(5)
-        if balance == None or balance <= Decimal("0.2"):
-            log_and_print(f"alias {alias}, too less balance skipped")
-            time.sleep(5)
-            continue
-        tx_hash = bera_swap.swap_bera_to_stgusdc()
-        log_and_print(f"alias {alias}, 交易哈希: {tx_hash}")
-        time.sleep(5)
-        # is_success = bera_transfer.check_transaction_status(tx_hash)
-        # if is_success:
-        #     print("交易成功！")
-        # else:
-        #     print("交易失败或仍在挂起状态。")
+    bera_swap.check_all_transaction()
+    excel_manager.save_msg_and_stop_service()

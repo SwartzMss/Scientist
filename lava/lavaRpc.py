@@ -59,7 +59,7 @@ class lavaRpc:
         random.shuffle(result)  # Shuffle the list to break the original order
         return result
 
-    def parse_address_file(self, max_num = 500):
+    def parse_address_file(self, max_num = 300):
         with open(address_file_path, 'r') as file:
             # 读取所有行并去除换行符
             addresses = [line.strip() for line in file.readlines()]

@@ -103,7 +103,7 @@ class ultiverseGM:
         return data
 
     def getAgentinfo(self):
-        url = f"https://pilot.ultiverse.io/api/register/agent-info"
+        url = f"https://pml.ultiverse.io/api/register/agent-info"
         response = session.get(url, headers=self.headers, timeout=60)
         data = response.json()
         return data
@@ -150,9 +150,10 @@ class ultiverseGM:
         return json.dumps({"worldIds": world_ids})
     
     def sign(self, signinData):
-        url = f"https://pilot.ultiverse.io/api/explore/sign"
+        url = f"https://pml.ultiverse.io/api/explore/sign"
         data={
-            "worldIds": signinData["worldIds"]
+            "worldIds": signinData["worldIds"],
+            "chainId":204
         }
         response = session.post(url, headers=self.headers,json=data, timeout=60)
         data = response.json()
@@ -211,13 +212,7 @@ class ultiverseGM:
         return sum(1 for entry in data['data'] if not entry.get('explored', True))
 
     def getCheck(self,voyageId):
-        url = f"https://pilot.ultiverse.io/api/explore/check?id={voyageId}"
-        response = session.get(url, headers=self.headers, timeout=60)
-        data = response.json()
-        return data
-
-    def checkScenes(self):
-        url = f"https://pilot.ultiverse.io/api/guide/check?scenes=EXPLORE"
+        url = f"https://pml.ultiverse.io/api/explore/check?id={voyageId}&chainId=204"
         response = session.get(url, headers=self.headers, timeout=60)
         data = response.json()
         return data
@@ -377,9 +372,6 @@ class ultiverseGM:
                 raise Exception(f" Error: {response}")
             exploredNum = self.count_explored_entries(response)
             unexploredNum = self.count_unexplored_entries(response)
-            response = self.checkScenes()
-            if response["success"] != True:
-                raise Exception(f" Error: {response}")
             log_and_print(f"{alias} soulPoints = {soulPoints}  points = {points} exploredNum = {exploredNum} unexploredNum = {unexploredNum}")
             if isRetry == False and soulPointsForExplored >= 50 and unexploredNum > 0 :
                 log_and_print(f"{alias} need retry for switch another wallet")

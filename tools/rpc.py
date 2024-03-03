@@ -88,7 +88,7 @@ class Rpc:
         res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
         return res.json()
 
-    def transfer(self, account, to, amount, gaslimit, **kw):
+    def transfer(self, account, to, amount, gaslimit, gasprice=None,**kw):
         """离线交易
         prvikey: 私钥
         to: 收款地址
@@ -99,7 +99,10 @@ class Rpc:
         """
         amount = int(amount, 16) if isinstance(amount, str) else int(amount)
         gaslimit = int(gaslimit, 16) if not isinstance(gaslimit, int) else gaslimit
-        gasprice = int(self.get_gas_price()['result'], 16)
+        if gasprice is None:
+            gasprice = int(self.get_gas_price()['result'], 16)
+        else:
+            gasprice = int(gasprice, 16) if isinstance(gasprice, str) else int(gasprice)
         nonce = int(self.get_transaction_count_by_address(account.address)['result'], 16)
         tx = {'from': account.address, 'value': amount,'to': to, 'gas': gaslimit, 'gasPrice': gasprice, 'nonce': nonce, 'chainId': self.chainid}
         if kw:
