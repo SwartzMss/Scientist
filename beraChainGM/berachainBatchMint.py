@@ -204,7 +204,7 @@ class BerachainBatchMint:
 
     def check_all_transaction_for_mint(self):
         for alias, tx_hash in self.QueueForMintResult:
-            log_and_print(f"{alias} start checking transaction status for Approve")
+            log_and_print(f"{alias} start checking transaction status for mint")
             code,msg = self.check_transaction_status(tx_hash)
             excel_manager.update_info(alias, f"tx_hash = {tx_hash} code = {code} msg = {msg}")
         self.QueueForMintResult.clear()
