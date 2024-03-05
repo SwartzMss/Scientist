@@ -204,8 +204,9 @@ class BerachainBatchMint:
 
     def check_all_transaction_for_mint(self):
         for alias, tx_hash in self.QueueForMintResult:
-            log_and_print(f"{alias} start checking transaction status for Approve")
+            log_and_print(f"{alias} start checking transaction status for mint")
             code,msg = self.check_transaction_status(tx_hash)
+            log_and_print(f"{alias} mint tx_hash = {tx_hash} code = {code} msg = {msg}")
             excel_manager.update_info(alias, f"tx_hash = {tx_hash} code = {code} msg = {msg}")
         self.QueueForMintResult.clear()
 
@@ -217,7 +218,7 @@ class BerachainBatchMint:
                 self.QueueForMint.append((alias, key))
                 continue
             code,msg = self.check_transaction_status(tx_hash)
-            log_and_print(f"{alias} tx_hash = {tx_hash} code = {code} msg = {msg}")
+            log_and_print(f"{alias} Approve tx_hash = {tx_hash} code = {code} msg = {msg}")
             if code != True:
                 excel_manager.update_info(alias, f" Approve went wrong: tx_hash = {tx_hash} code = {code} msg = {msg}")
             self.QueueForMint.append((alias, key))
