@@ -28,8 +28,8 @@ def log_and_print(text):
 #BNB https://bsc-dataseed.binance.org/ 56
 #openbnb https://opbnb-mainnet-rpc.bnbchain.org 204
 #matic https://rpc-mainnet.maticvigil.com 137
-class BatchDeposit:
-    def __init__(self, private_key, rpc_url='https://rpc-mainnet.maticvigil.com', chain_id=137):
+class batchwithdraw:
+    def __init__(self, private_key, rpc_url='https://bsc-dataseed.binance.org/', chain_id=56):
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = self.web3.eth.account.from_key(private_key)
@@ -50,14 +50,24 @@ class BatchDeposit:
     def get_gas_price(self):
         return self.rpc.get_gas_price()['result']
 
-    def send_transaction_from_swartz(self, swartz_key, to_address, value):
-        '''使用Swartz账户发送单个转账'''
-        nonce = int(self.get_nonce(), 16)
+    def send_transaction_to_swartz(self):
         gas_price = int(self.get_gas_price(),16)
+        log_and_print(f"alias {alias}, gas_price: {gas_price}")
+        balance = self.get_balance(self.account.address)
+        log_and_print(f"alias {alias}, balance: {balance}")
+        estimated_gas_fee = 21000 * gas_price
+        balance_wei = self.web3.to_wei(balance, 'ether')
+        max_value_wei = balance_wei - estimated_gas_fee
+        nonce = int(self.get_nonce(), 16)
+        if max_value_wei > 0:
+            value = self.web3.from_wei(max_value_wei, 'ether')  # 将余额转换回ether单位，如果需要的话
+        else:
+            log_and_print("余额不足以支付预计的gas费用。")
+            return None
         tx_data = {
             'nonce': Web3.to_hex(nonce),
             'chainId': self.chain_id,
-            'to': Web3.to_checksum_address(to_address),
+            'to': Web3.to_checksum_address("0x6a8525171200b11c676ba33ea1915af35b0116fe"),
             'value':  Web3.to_wei(value, 'ether'),
             'gas': Web3.to_hex(21000),
             'gasPrice': Web3.to_hex(self.web3.to_wei(gas_price, 'wei'))
@@ -85,7 +95,6 @@ class BatchDeposit:
             return False  # 处理其他可能的异常
 
 if __name__ == "__main__":
-    swartz_key = "xx"
     # 初始化UserInfoApp等
     UserInfoApp = UserInfo(log_and_print)
     credentials_list = UserInfoApp.find_user_credentials_for_eth("swartz")
@@ -96,15 +105,9 @@ if __name__ == "__main__":
         key = credentials["key"]
         account = web3.Account.from_key(key)    
         # 这里假设每个用户都要接收固定金额的转账
-        app = BatchDeposit(private_key=swartz_key)
-        gas_price = app.get_gas_price()
-        log_and_print(f"alias {alias}, gas_price: {gas_price}")
-        balance = app.get_balance(account.address)
-        log_and_print(f"alias {alias}, balance: {balance}")
-        if balance == None or balance >= Decimal("0.4"):
-            continue
+        app = batchwithdraw(private_key=key)
         # 使用Swartz账户向每个用户发送转账
-        tx_hash = app.send_transaction_from_swartz(swartz_key, account.address, 0.4)
+        tx_hash = app.send_transaction_to_swartz()
         if tx_hash == None:
             continue
         log_and_print(f"alias {alias}, 交易哈希: {tx_hash}")

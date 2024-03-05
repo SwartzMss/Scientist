@@ -220,14 +220,12 @@ if __name__ == "__main__":
 
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("AZCGM", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_app("AZCGM")
     app = AZCGM( "com.azc.azcoiner", ".SplashActivity")
     retry_list = [] 
     failed_list = []
-    for credentials in credentials_list:
-        alias = credentials["alias"]
-        index = credentials["index"]
-        devid = credentials["devid"]
+    alais_list = UserInfoApp.find_alias_by_path()
+    for alias in alais_list:
+        index,devid = UserInfoApp.find_appinfo_by_alias_in_file(alias)
         if(app.run(alias, index,devid) == False):
             retry_list.append((alias,index,devid))
 

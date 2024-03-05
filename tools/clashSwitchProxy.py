@@ -7,7 +7,7 @@ def myprint(text):
 #config.yaml 配置文件在里面
 
 
-class ClashAPIManager:
+class clashSwitchProxy:
     def __init__(self, logger = myprint, config_path="C:/Users/swart/.config/clash/config.yaml"):
         config = self.load_config(config_path)
         # 设置API URL和密钥
@@ -85,7 +85,11 @@ class ClashAPIManager:
         # 如果所有代理都尝试过且都失败了，返回False
         return False
 
-# app = ClashAPIManager()
-# app.get_all_proxies()
-# app.change_proxy('🇺🇸 US | 美国 06')
-# app.verify_ip_change()
+
+
+
+# if __name__ == '__main__':
+    # app = ClashAPIManager()
+    # app.get_all_proxies()
+    # app.change_proxy('🇺🇸 US | 美国 06')
+    # app.verify_ip_change()

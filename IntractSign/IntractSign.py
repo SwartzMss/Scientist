@@ -139,6 +139,7 @@ class IntractSign:
             log_and_print(f"{alias} login successfully ")
         except Exception as e:
             log_and_print(f"{alias} login failed: {e}")
+            excel_manager.update_info(alias, f" login failed: {e}")
             return False
 
         try:
@@ -165,28 +166,31 @@ class IntractSign:
             return True
         except Exception as e:
             log_and_print(f"{alias} gm failed: {e}")
+            excel_manager.update_info(alias, f" gm failed: {e}")
             return False
 
             
 
 
 if __name__ == '__main__':
-    proxy_list = ['http://127.0.0.1:7890']
-    proxies = {'http': random.choice(proxy_list),
-               'https': random.choice(proxy_list)}
     session = requests.Session()
-    session.proxies = proxies
     app = IntractSign()
-
+    retry_list = []
     failed_list = []
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("IntractSign", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_eth("IntractSign")
-    for credentials in credentials_list:
-        alias = credentials["alias"]
-        key = credentials["key"]
-
+    alais_list = UserInfoApp.find_alias_by_path()
+    for alias in alais_list:
+        key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
         account = web3.Account.from_key(key)    
+        if(app.run(alias, account) == False):
+            retry_list.append((alias, account))
+
+    if len(retry_list) != 0:
+        log_and_print(f"start retry failed case")
+        time.sleep(5)   
+
+    for alias, account in retry_list:
         if(app.run(alias, account) == False):
             failed_list.append((alias, account))
 

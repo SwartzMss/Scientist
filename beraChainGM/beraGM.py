@@ -19,7 +19,7 @@ from tools.UserInfo import UserInfo
 from tools.YesCaptchaClient import YesCaptchaClient
 # 现在可以从tools目录导入excelWorker
 from tools.excelWorker import excelWorker
-from tools.switchProxy import ClashAPIManager
+from tools.clashSwitchProxy import clashSwitchProxy
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
@@ -105,25 +105,28 @@ class bearGM:
         excel_manager.update_info(alias,  f"{response}")
         return True
 
+config_path = rf'\\192.168.3.142\SuperWind\Study\account_config\berachain.json'
 
 if __name__ == "__main__":
     app = bearGM()
-    proxyApp = ClashAPIManager(logger = log_and_print)
+    proxyApp = clashSwitchProxy(logger = log_and_print)
     failed_list = []
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("bearGM", log_and_print)
-    credentials_list = UserInfoApp.find_user_credentials_for_eth("bearGM")
+    alais_list = UserInfoApp.find_alias_by_path(config_path)
     client_key = UserInfoApp.find_yesCaptch_clientkey()
-    for credentials in credentials_list:
-        alias = credentials["alias"]
-        key = credentials["key"]
-        proxyName = UserInfoApp.find_proxy_by_alias_in_file(alias)
+    for alias in alais_list:
+        log_and_print(f"statring running by alias {alias}")
+        proxyName = UserInfoApp.find_clashproxy_by_alias_in_file(alias)
         if not proxyName:
             log_and_print(f"cannot find proxy username = {alias}")
+            excel_manager.update_info(alias, f"cannot find proxy ")
             continue
         if proxyApp.change_proxy_until_success(proxyName) == False:
+            excel_manager.update_info(alias, f"change_proxy_until_success failed")
             continue
         time.sleep(5)   
+        key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
         if(app.run(alias, key) == False):
             failed_list.append(alias)
 

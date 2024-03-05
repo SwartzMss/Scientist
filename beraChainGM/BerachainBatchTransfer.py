@@ -100,11 +100,9 @@ if __name__ == "__main__":
         time.sleep(5)
         if balance == None:
             continue
-        continue # 这边只是check balance
-        if balance <= Decimal("0.02"):
+        if balance <= Decimal("0.01"):
             log_and_print(f"alias {alias}, too less balance skipped")
-            time.sleep(5)
-        continue
+            continue
         tx_hash = bera_transfer.send_transaction_to_swartz(balance - Decimal("0.01"))
         log_and_print(f"alias {alias}, 交易哈希: {tx_hash}")
         time.sleep(5)
