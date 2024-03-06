@@ -19,44 +19,86 @@ class Rpc:
     def get_transaction_nonce(self, address):
         """获取交易数"""
         data = {"jsonrpc":"2.0","method":"eth_getTransactionCount","params":[address,'pending'],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            print(f"get_gas_price  Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def get_current_block(self):
         """获取最新区块"""
         data = {"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            print(f"get_gas_price  Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def get_block_detail(self, number):
         """获取区块hash"""
         if isinstance(number, int):
             number = hex(number)
         data = {"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":[number,True],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            print(f"get_gas_price  Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def call(self, to, data):
         data = {"jsonrpc":"2.0","method":"eth_call","params":[{"to": to, "data": data}, "latest"],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies, timeout=self.timeout)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            print(f"get_gas_price  Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def get_transaction(self, txhash):
         """获取的交易详情"""
         data = {"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":[txhash],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            print(f"get_gas_price  Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def get_gas_price(self):
         """获取gas"""
         data = {"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            print(f"get_gas_price  Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def get_transaction_count_by_address(self, address):
         data = {"jsonrpc":"2.0","method":"eth_getTransactionCount","params":[address,'latest'],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            print(f"get_gas_price  Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def send_raw_transaction(self, hex):
         """广播交易"""
@@ -85,8 +127,14 @@ class Rpc:
     def get_code(self, address, block="latest"):
         block = hex(block) if isinstance(block, int) else block
         data = {"jsonrpc":"2.0","method":"eth_getCode","params":[address, block],"id":1}
-        res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-        return res.json()
+        try:
+            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            return res.json()
+        except Exception as e:
+            print(f"get_gas_price  Error: {e}")
+            time.sleep(2)
+            # 处理错误，例如重试或返回默认值
+            return None
 
     def transfer(self, account, to, amount, gaslimit, gasprice=None,**kw):
         """离线交易

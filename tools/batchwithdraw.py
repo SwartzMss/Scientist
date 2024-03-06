@@ -28,8 +28,9 @@ def log_and_print(text):
 #BNB https://bsc-dataseed.binance.org/ 56
 #openbnb https://opbnb-mainnet-rpc.bnbchain.org 204
 #matic https://rpc-mainnet.maticvigil.com 137
+#capx https://rpc-zkevm.capx.fi/sequencer-api 7116
 class batchwithdraw:
-    def __init__(self, private_key, rpc_url='https://bsc-dataseed.binance.org/', chain_id=56):
+    def __init__(self, private_key, rpc_url='https://rpc-zkevm.capx.fi/sequencer-api', chain_id=7116):
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = self.web3.eth.account.from_key(private_key)
@@ -45,10 +46,16 @@ class batchwithdraw:
 
     def get_nonce(self):
         """获取当前账户的交易数，以确定nonce."""
-        return self.rpc.get_transaction_nonce(self.account.address)['result']
+        data = self.rpc.get_transaction_nonce(self.account.address)
+        if data == None:
+            return None
+        return data['result']
 
     def get_gas_price(self):
-        return self.rpc.get_gas_price()['result']
+        data = self.rpc.get_gas_price()
+        if data == None:
+            return None
+        return data['result']
 
     def send_transaction_to_swartz(self):
         gas_price = int(self.get_gas_price(),16)
@@ -67,7 +74,7 @@ class batchwithdraw:
         tx_data = {
             'nonce': Web3.to_hex(nonce),
             'chainId': self.chain_id,
-            'to': Web3.to_checksum_address("0x6a8525171200b11c676ba33ea1915af35b0116fe"),
+            'to': Web3.to_checksum_address("0xcab666f5c024bb15f7f1f743e4c28423d2aaf3a2"),
             'value':  Web3.to_wei(value, 'ether'),
             'gas': Web3.to_hex(21000),
             'gasPrice': Web3.to_hex(self.web3.to_wei(gas_price, 'wei'))
