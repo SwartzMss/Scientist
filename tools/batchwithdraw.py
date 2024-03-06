@@ -74,7 +74,7 @@ class batchwithdraw:
         tx_data = {
             'nonce': Web3.to_hex(nonce),
             'chainId': self.chain_id,
-            'to': Web3.to_checksum_address("0xcab666f5c024bb15f7f1f743e4c28423d2aaf3a2"),
+            'to': Web3.to_checksum_address("0x6a8525171200b11c676ba33ea1915af35b0116fe"),
             'value':  Web3.to_wei(value, 'ether'),
             'gas': Web3.to_hex(21000),
             'gasPrice': Web3.to_hex(self.web3.to_wei(gas_price, 'wei'))

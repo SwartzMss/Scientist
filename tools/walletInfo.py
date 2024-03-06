@@ -38,10 +38,6 @@ blockchains = {
     "matic": {
         "url": "https://rpc-mainnet.maticvigil.com",
         "chain_id": 137
-    },
-    "bera": {
-        "url": "https://artio.rpc.berachain.com",
-        "chain_id": 80085
     }
 }
 
