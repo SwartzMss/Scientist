@@ -67,6 +67,7 @@ if __name__ == "__main__":
         address = web3.Account.from_key(key).address
         # 将地址信息存储在内存中
         alias_info[alias]['address'] = address
+        excel_manager.update_info(alias, address, "address")
     
     for name, details in blockchains.items():
         log_and_print(f"Name: {name}, URL: {details['url']}, Chain ID: {details['chain_id']}")
