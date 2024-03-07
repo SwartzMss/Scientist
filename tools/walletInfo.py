@@ -60,6 +60,14 @@ if __name__ == "__main__":
     excel_manager = excelWorker("wallet", log_and_print)
     alais_list = UserInfoApp.find_alias_by_path()
     alias_info = {alias: {} for alias in alais_list}
+    
+    # 收集地址信息
+    for alias in alias_list:
+        key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
+        address = web3.Account.from_key(key).address
+        # 将地址信息存储在内存中
+        alias_info[alias]['address'] = address
+    
     for name, details in blockchains.items():
         log_and_print(f"Name: {name}, URL: {details['url']}, Chain ID: {details['chain_id']}")
         app = wallinfo(details['url'], details['chain_id'])
@@ -68,12 +76,7 @@ if __name__ == "__main__":
             address = web3.Account.from_key(key).address    
             balance = app.get_balance(address)
             log_and_print(f"{alias} address {address} {name}_balance {balance}")
-            if 'address' not in alias_info[alias]:
-                alias_info[alias]['address'] = address
-            alias_info[alias][f"{name}_balance"] = balance
+            excel_manager.update_info(alias, str(balance), f"{name}_balance")
             
-    for alias, info in alias_info.items():
-        balance_info = ' '.join([f"{key}: {value}" for key, value in info.items() if key != 'address'])
-        excel_manager.update_info(alias, f"address {info['address']} {balance_info}")
     excel_manager.save_msg_and_stop_service()
 
