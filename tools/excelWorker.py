@@ -36,30 +36,30 @@ class excelWorker:
         if os.path.exists(self.lockfile):
             os.remove(self.lockfile)
 
-    def update_info(self, name, msg):
-        # 首先检查是否已经有相同name的数据
-        existing_item_index = None
-        for index, item in enumerate(self.cached_data):
+    def update_info(self, name, msg, column_name="msg"):
+        # 查找是否已经有相同name的数据条目
+        existing_item = None
+        for item in self.cached_data:
             if item['name'] == name:
-                # 如果找到，记录下索引位置，稍后删除
-                existing_item_index = index
+                existing_item = item
                 break
 
-        # 如果找到了现有的条目，先删除它
-        if existing_item_index is not None:
-            del self.cached_data[existing_item_index]
-
-        # 然后添加新的条目，无论是否删除了旧的
-        self.cached_data.append({"name": name, "msg": msg})
+        if existing_item:
+            # 如果找到了现有的条目，更新或添加列信息
+            existing_item[column_name] = msg
+        else:
+            # 如果没有找到现有的条目，创建一个新条目
+            new_item = {"name": name, column_name: msg}
+            self.cached_data.append(new_item)
 
     def save_msg_and_stop_service(self):
         if not self.cached_data: 
-            self.logger(f"no cached_data. no need save file")
+            self.logger("no cached_data. no need save file")
             return
         # 在保存Excel之前维护日志文件
         self.maintain_log_files()
         try:
-            # 工作表名称现在包括日期和时间，例如 "05_10_45" 表示每月的第5天上午10点45分
+            # 工作表名称现在包括日期和时间
             sheet_name = datetime.now().strftime('%d_%H_%M')
             if not os.path.exists(self.filename):
                 with pd.ExcelWriter(self.filename, engine='openpyxl') as writer:
