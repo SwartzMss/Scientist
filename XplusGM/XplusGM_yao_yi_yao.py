@@ -173,6 +173,8 @@ class XplusGM:
             while(1):
                 log_and_print(f"{alias} countNum = {countNum}")
                 countNum = countNum +1
+                if countNum >= 250:
+                    break
                 try:
                     self.connect_to_appium()
                     log_and_print(f"{alias} connect_to_appium successfully")
@@ -223,15 +225,6 @@ class XplusGM:
                 time.sleep(5)    
                 if not error_occurred:
                     self.yaoyiyao_ldplayer()
-
-                # if not error_occurred:
-                #     if self.find_and_click_element('//android.widget.Image[@text="6+utm5UV73aAuOtQVi7rczW1FV91W4BoaVCuFa+JQ7SOuccW1zKhmHTcm4AYU5GiEG8oqjINfKT8k5+hG8B4AAAAASUVORK5CYII="]') == True:	
-                #         log_and_print(f"exit yao yi yao clicked succeed: {self.alias}")
-                #     else:
-                #         log_and_print(f"exit yao yi yaoclicked failed: {self.alias}")
-                #         error_occurred = True  
-                # time.sleep(5)       
-                
 
         finally:
             if error_occurred:
