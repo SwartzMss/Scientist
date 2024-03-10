@@ -23,7 +23,7 @@ from tools.excelWorker import excelWorker
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
-log_file_path = rf'\\192.168.3.142\SuperWind\Study\XplusGM_{current_time}.log'
+log_file_path = rf'\\192.168.3.142\SuperWind\Study\XplusGM_yaoyiyao_{current_time}.log'
 
 
 def log_message(text):
@@ -53,6 +53,20 @@ class XplusGM:
         """启动指定索引号的雷电模拟器实例"""
         command = f'"E:\\leidian\\LDPlayer9\\dnplayer.exe" index={self.index}'
         subprocess.Popen(command, shell=True)
+
+
+    def yaoyiyao_ldplayer(self, counts=50):
+        command = '"E:\\leidian\\LDPlayer9\\dnconsole.exe" action --name "swartz" --key call.shake --value null'
+        processes = []
+        for _ in range(counts):
+            process = subprocess.Popen(command, shell=True)
+            processes.append(process)
+        # 等待最后一个命令启动后稍作延时，以确保有足够的时间完成摇一摇动作
+        time.sleep(counts * 0.5)  # 假设每次摇一摇需要0.5秒
+
+        # 确保所有进程都已完成
+        for process in processes:
+            process.wait()
 
     def close_ldplayer(self):
         """关闭指定索引号的雷电模拟器实例"""
@@ -136,68 +150,89 @@ class XplusGM:
         try:
             try:
                 self.start_ldplayer()
-                log_and_print(f"{alias} start_ldplayer successfully")
+                log_and_print(f"{alias} firstly start_ldplayer successfully")
             except Exception as e:
-                log_and_print(f"{alias} start_ldplayer failed: {e}")
-                excel_manager.update_info(alias, f"start_ldplayer failed: {e}")
-                error_occurred = True
+                log_and_print(f"{alias} firstly start_ldplayer failed: {e}")
+                sys.exit()
 
-            if not error_occurred:
-                try:
-                    self.wait_for_emulator()
-                    log_and_print(f"{alias} wait_for_emulator successfully")
-                except Exception as e:
-                    log_and_print(f"{alias} wait_for_emulator failed: {e}")
-                    excel_manager.update_info(alias, f"wait_for_emulator failed: {e}")
-                    error_occurred = True
+            try:
+                self.wait_for_emulator()
+                log_and_print(f"{alias} firstly wait_for_emulator successfully")
+            except Exception as e:
+                log_and_print(f"{alias} firstly wait_for_emulator failed: {e}")
+                sys.exit()
 
-            if not error_occurred:
+            try:
+                self.connect_to_appium()
+                log_and_print(f"{alias} firstly connect_to_appium successfully")
+            except Exception as e:
+                log_and_print(f"{alias} firstly connect_to_appium failed: {e}")
+                sys.exit()
+
+            countNum = 0
+            while(1):
+                log_and_print(f"{alias} countNum = {countNum}")
+                countNum = countNum +1
                 try:
                     self.connect_to_appium()
                     log_and_print(f"{alias} connect_to_appium successfully")
+                    error_occurred = False
                 except Exception as e:
                     log_and_print(f"{alias} connect_to_appium failed: {e}")
-                    excel_manager.update_info(alias, f"connect_to_appium failed: {e}")
                     error_occurred = True
 
-            time.sleep(8) # 这边耗时会等待最开始的加载
-
-            if not error_occurred:
-                if self.find_and_click_element('//android.view.View[@text="自動挖礦"]') == True:
-                    log_and_print(f"switch page successfully: {self.alias}")
-                else:
-                    log_and_print(f"switch page failed: {self.alias}")
-                    excel_manager.update_info(self.alias, "switch page failed")
-                    error_occurred = True
-
-            if not error_occurred:
-                if self.find_element('//android.widget.TextView[@text="每小時產出： NaN XCOIN"]') == True:	
-                    log_and_print(f"need relogin: {self.alias}")
-                    excel_manager.update_info(self.alias, "need relogin")
-                    error_occurred = True
-
-            if not error_occurred:
-                if self.find_element('//android.widget.Image[@text="yMR8SDQrNwJGY7LyJUGmEb286uAAAAAElFTkSuQmCC"]') == True:	
-                    log_and_print(f"need relogin: {self.alias}")
-                    excel_manager.update_info(self.alias, "need relogin")
-                    error_occurred = True             	
-            
-            if not error_occurred:
-                if self.find_and_click_element('//android.widget.Button[@text="領取"]') == True:
-                    log_and_print(f"claimed successfully: {self.alias}")
-                    if False == self.find_and_click_element('//android.widget.Image[@text="17EZJMxGT442BvgHrTnaL9xn22vlf1U8xA6wjaEq2oFqOWbOsBwZg7QYwCw8bCIAzQ6SGSQACABQAKABAABQPARXepnFZhDV3JOXwVyCVVktUGNUivVbH2HFxIWEt2bwZqlAAAAAElFTkSuQmCC"]'):
-                        log_and_print(f"find exit claim failed: {self.alias}")
-                        excel_manager.update_info(self.alias, "find exit claim failed")
+                time.sleep(8) # 这边耗时会等待最开始的加载
+                if not error_occurred:
+                    if self.find_and_click_element('//android.view.View[@text="自動挖礦"]') == True:
+                        log_and_print(f"switch page to start successfully: {self.alias}")
+                    else:
+                        log_and_print(f"switch page  to start failed: {self.alias}")
                         error_occurred = True
-                else:
-                    log_and_print(f"{self.alias} cannot find claim ")
-            if not error_occurred:
-                if self.find_and_click_element('//android.widget.Button[@text="開啟挖礦"]') == True:
-                    log_and_print(f"recheck successfully: {self.alias}")
-                    excel_manager.update_info(self.alias, "recheck successfully")
-                else:
-                    log_and_print(f"not need sign rightb now: {self.alias}")
-                    excel_manager.update_info(self.alias, "not need sign rightb now")
+
+                if not error_occurred:
+                    if self.find_and_click_element('//android.widget.TextView[@text="每小時產出： NaN XCOIN"]') == True:	
+                        log_and_print(f"need relogin: {self.alias}")
+                        sys.exit()
+
+                if not error_occurred:
+                    if self.find_and_click_element('//android.widget.Image[@text="yMR8SDQrNwJGY7LyJUGmEb286uAAAAAElFTkSuQmCC"]') == True:	
+                        log_and_print(f"need relogin: {self.alias}")
+                        sys.exit()          	
+
+                if not error_occurred:
+                    if self.find_and_click_element('//android.view.View[@text="遊戲"]') == True:	
+                        log_and_print(f"小程式 clicked succeed: {self.alias}")
+                    else:
+                        log_and_print(f"小程式 clicked failed: {self.alias}")
+                        error_occurred = True
+
+                if not error_occurred:
+                    if self.find_and_click_element('//android.view.View[@resource-id="app"]/android.view.View[1]/android.view.View[2]/android.view.View/android.view.View[3]') == True:	
+                        log_and_print(f"game clicked succeed: {self.alias}")
+                    else:
+                        log_and_print(f"game clicked failed: {self.alias}")
+                        error_occurred = True  
+        
+
+                if not error_occurred:
+                    if self.find_and_click_element('//android.view.View[@text="立刻搖一搖"]') == True:	
+                        log_and_print(f"立刻搖一搖 clicked succeed: {self.alias}")
+                    else:
+                        log_and_print(f"立刻搖一搖 clicked failed: {self.alias}")
+                        error_occurred = True  
+                time.sleep(5)    
+                if not error_occurred:
+                    self.yaoyiyao_ldplayer()
+
+                # if not error_occurred:
+                #     if self.find_and_click_element('//android.widget.Image[@text="6+utm5UV73aAuOtQVi7rczW1FV91W4BoaVCuFa+JQ7SOuccW1zKhmHTcm4AYU5GiEG8oqjINfKT8k5+hG8B4AAAAASUVORK5CYII="]') == True:	
+                #         log_and_print(f"exit yao yi yao clicked succeed: {self.alias}")
+                #     else:
+                #         log_and_print(f"exit yao yi yaoclicked failed: {self.alias}")
+                #         error_occurred = True  
+                # time.sleep(5)       
+                
+
         finally:
             if error_occurred:
                 self.close_ldplayer()
@@ -214,28 +249,6 @@ class XplusGM:
 
 # 使用示例
 if __name__ == "__main__":
-
-    UserInfoApp = UserInfo(log_and_print)
-    excel_manager = excelWorker("XplusGM", log_and_print)
     app = XplusGM( "com.xplus.wallet", ".MainActivity")
-    retry_list = []
-    alais_list = UserInfoApp.find_alias_by_path()
-    for alias in alais_list:
-        index,devid = UserInfoApp.find_appinfo_by_alias_in_file(alias)
-        if(app.run(alias, index,devid) == False):
-            retry_list.append((alias, index,devid))
+    app.run("swartz", 30,"emulator-5614")
 
-    if len(retry_list) != 0:
-        log_and_print("start retry faile case")
-
-    failed_list = []
-    for alias, index, devid in retry_list:
-        if(app.run(alias, index,devid) == False):
-            failed_list.append(alias)
-
-    if len(failed_list) == 0:
-        log_and_print(f"so lucky all is signed")
-
-    for alias in failed_list:
-        log_and_print(f"final failed username = {alias}")
-    excel_manager.save_msg_and_stop_service()  
