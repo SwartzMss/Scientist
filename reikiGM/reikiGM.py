@@ -202,13 +202,13 @@ class ReikiSign:
             response = self.getProfile()
             response = self.getSuggested_question()
             response = self.getSuggested_bot()
-            log_and_print(f"{alias} random msg successfully ")
+            log_and_print(f"{alias} first random msg successfully ")
         except Exception as e:
-            log_and_print(f"{alias} random msg failed: {e}")
+            log_and_print(f"{alias} first random msg failed: {e}")
 
         try:
             response = self.checkResult()
-            if 'today' in response:
+            if 'today' in response and isinstance(response['today'], int):
                 today= response["today"]
                 total = response["total"]
                 log_and_print(f"{alias} checkResult already successfully total {total} today {today}")
@@ -228,6 +228,13 @@ class ReikiSign:
             log_and_print(f"{alias} checkin failed: {e}")
             excel_manager.update_info(alias, f"checkin failed: {e}")
             return False      
+
+        try:
+            response = self.getInfo()
+            response = self.getProfile()
+            log_and_print(f"{alias} second random msg successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} second random msg failed: {e}")
 
         try:
             response = self.checkResult()
@@ -267,6 +274,9 @@ if __name__ == '__main__':
         if(app.run(alias, account) == False):
             retry_list.append((alias, account))
 
+    if len(retry_list) != 0:
+        log_and_print(f"start retry failed case")
+        time.sleep(5) 
 
     for alias, account in retry_list:
         log_and_print(f"statring rerunning by alias {alias}")
