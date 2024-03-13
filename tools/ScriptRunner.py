@@ -41,26 +41,34 @@ class ScriptRunner:
         os.remove(self.config_path)
 
     def run_script(self):
-        """根据配置信息运行脚本。"""
-        python_path = self.config['Paths']['python_interpreter']
-        script_path = self.config['Paths']['script_directory']
-        run_path = self.config['Paths']['run_directory']
-        script_name = self.config['Script']['name']
+        """根据配置信息运行脚本，增加字段读取保护和执行停止功能。"""
+        # 检查是否存在停止标志
+        if os.path.exists("stop_script.flag"):
+            print("检测到停止标志文件，脚本执行被停止。")
+            return
+
+        # 使用.get()避免KeyError，可以指定默认值作为第二个参数
+        python_path = self.config['Paths'].get('python_interpreter', '/usr/bin/python3')
+        script_path = self.config['Paths'].get('script_directory')
+        run_path = self.config['Paths'].get('run_directory')
+        script_name = self.config['Script'].get('name')
+
+        # 确保必要的配置信息存在
+        if not script_path or not run_path or not script_name:
+            print("配置文件中缺少必要的路径信息或脚本名称。")
+            return
 
         self.check_file_exists(python_path, "Python解释器")
         script_full_path = os.path.join(script_path, script_name)
         self.check_file_exists(script_full_path, "Python脚本")
 
+        # 更改当前工作目录并执行脚本
         os.chdir(run_path)
         try:
-            subprocess.run(["python3", "your_script.py"], check=True)
+            subprocess.run([python_path, script_full_path], check=True)
         except subprocess.CalledProcessError as e:
             print(f"脚本执行失败: {e}")
 
-    def check_file_exists(self, file_path, description):
-        """检查文件是否存在，如果不存在抛出异常。"""
-        if not os.path.exists(file_path):
-            raise FileNotFoundError(f"{description} {file_path} 未找到。")
 
 def main():
     config_path = "script_config.ini"
