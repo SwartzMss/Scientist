@@ -52,7 +52,10 @@ class ScriptRunner:
         self.check_file_exists(script_full_path, "Python脚本")
 
         os.chdir(run_path)
-        subprocess.run([python_path, script_full_path])
+        try:
+            subprocess.run(["python3", "your_script.py"], check=True)
+        except subprocess.CalledProcessError as e:
+            print(f"脚本执行失败: {e}")
 
     def check_file_exists(self, file_path, description):
         """检查文件是否存在，如果不存在抛出异常。"""
