@@ -30,7 +30,7 @@ class socket5SwitchProxy:
             time.sleep(3)
             if self.verify_ip_change(proxy_name):
                 self.logger(f"Successfully changed proxy and verified IP: {proxy_name}")
-                return True
+                return True, proxy_name
             else:
                 self.logger(f"Proxy changed but IP verification failed: {proxy_name}")
         # 如果所有代理都尝试过且都失败了，返回False
