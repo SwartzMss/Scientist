@@ -55,7 +55,7 @@ class XplusGM:
         subprocess.Popen(command, shell=True)
 
 
-    def yaoyiyao_ldplayer(self, counts=50):
+    def yaoyiyao_ldplayer(self, counts=60):
         command = '"E:\\leidian\\LDPlayer9\\dnconsole.exe" action --name "swartz" --key call.shake --value null'
         processes = []
         for _ in range(counts):
@@ -190,16 +190,6 @@ class XplusGM:
                     else:
                         log_and_print(f"switch page  to start failed: {self.alias}")
                         error_occurred = True
-
-                if not error_occurred:
-                    if self.find_and_click_element('//android.widget.TextView[@text="每小時產出： NaN XCOIN"]') == True:	
-                        log_and_print(f"need relogin: {self.alias}")
-                        sys.exit()
-
-                if not error_occurred:
-                    if self.find_and_click_element('//android.widget.Image[@text="yMR8SDQrNwJGY7LyJUGmEb286uAAAAAElFTkSuQmCC"]') == True:	
-                        log_and_print(f"need relogin: {self.alias}")
-                        sys.exit()          	
 
                 if not error_occurred:
                     if self.find_and_click_element('//android.view.View[@text="遊戲"]') == True:	
