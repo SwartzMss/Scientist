@@ -55,7 +55,7 @@ class XplusGM:
         subprocess.Popen(command, shell=True)
 
 
-    def yaoyiyao_ldplayer(self, counts=60):
+    def yaoyiyao_ldplayer(self, counts=50):
         command = '"E:\\leidian\\LDPlayer9\\dnconsole.exe" action --name "swartz" --key call.shake --value null'
         processes = []
         for _ in range(counts):
