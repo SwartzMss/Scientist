@@ -230,6 +230,7 @@ class ReikiSign:
             return False      
 
         try:
+            time.sleep(2)
             response = self.getInfo()
             response = self.getProfile()
             log_and_print(f"{alias} second random msg successfully ")
