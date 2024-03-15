@@ -11,6 +11,7 @@ socket5proxyfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\accoun
 clashproxyfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_clashproxy.json'
 emailfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_email.json'
 ethfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_eth.json'
+solfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_sol.json'
 appfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_app.json'
 default_account_path = rf'\\192.168.3.142\SuperWind\Study\account_config\default_account.json'
 
@@ -36,6 +37,7 @@ class UserInfo:
         except FileNotFoundError:
             self.logger(f"File {captchfile_path} not found")
         return None
+
 
     def find_alias_by_path(self, config_file = default_account_path):
         alias_list = []
@@ -115,6 +117,23 @@ class UserInfo:
             self.logger(f"File {emailfile_path} not found")
         return None,None,None,None
 
+    def find_solinfo_by_alias_in_file(self, alias):
+        try:
+            with open(solfile_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+
+            for user in data.get("users", []):
+                if user['alias'] == alias:
+                    eth_info = user['eth']
+                    return eth_info['key']
+
+        except json.JSONDecodeError:
+            self.logger(f"File {solfile_path}  Invalid JSON data")
+        except KeyError as e:
+            self.logger(f"File {solfile_path}  Missing key in JSON data: {e}")
+        except FileNotFoundError:
+            self.logger(f"File {solfile_path} not found")
+        return None
 
     
     def find_ethinfo_by_alias_in_file(self, alias):

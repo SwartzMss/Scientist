@@ -157,12 +157,6 @@ class IntractSign:
             streakCount=gm['streakCount']
             log_and_print(f"{alias} gm successfully")
             excel_manager.update_info(alias, "sign successfully")
-            '''
-            {'streakCount': 1, 'longestStreakCount': 1, 'streakTimestamp': '2024-01-18T12:41:34.623Z',
-             'streakDate': '2024-01-18', 'isFirstTimeMarked': True, 'expiredStreakCount': 0}'''
-
-            ''' 这个是第一次登录
-            {'streakCount': 0, 'expiredStreakCount': 0, 'longestStreakCount': 0, 'isFirstTimeMarked': True}'''
             return True
         except Exception as e:
             log_and_print(f"{alias} gm failed: {e}")

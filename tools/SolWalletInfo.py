@@ -2,9 +2,7 @@ import os
 import sys
 import datetime
 from decimal import Decimal
-from solana.rpc.api import Client
-from solana.keypair import Keypair
-from solana.publickey import PublicKey
+from solathon import Client, PublicKey, Keypair
 import base58
 
 # 假设你的工具目录结构与之前类似
@@ -23,10 +21,10 @@ class SolanaWalletInfo:
         self.client = Client(rpc_url)
 
     def get_balance(self, address):
-        result = self.client.get_balance(address)
-        balance_lamports = result['result']['value']
+        balance_lamports = self.client.get_balance(address)
         balance_sol = Decimal(balance_lamports) / 1000000000  # 1 SOL = 1 billion Lamports
         return balance_sol
+
 
 if __name__ == "__main__":
     solana_rpc_url = "https://api.mainnet-beta.solana.com"  # 主网RPC地址
@@ -36,16 +34,32 @@ if __name__ == "__main__":
 
     # 收集地址信息
     for alias in alias_list:
-        key = UserInfoApp.find_sol_info_by_alias_in_file(alias)  # 假设你的UserInfo模块可以处理Solana的信息
-        address = str(PublicKey(Keypair.from_secret_key(base58.b58decode(key)).public_key))
+        key = UserInfoApp.find_solinfo_by_alias_in_file(alias)  # 假设这个方法返回Base58编码的私钥
+        decoded_key = base58.b58decode(key)
+
+        # 检查 decoded_key 是否为元组，如果是，则取第一个元素
+        if isinstance(decoded_key, tuple):
+            decoded_key = decoded_key[0]
+        
+        # 使用解码后的私钥创建 Keypair
+        keypair = Keypair.from_private_key(decoded_key)
+        address = str(keypair.public_key)  # 从 Keypair 获取公钥（地址）
         excel_manager.update_info(alias, address, "address")
-    
+
     sol_app = SolanaWalletInfo(solana_rpc_url)
     for alias in alias_list:
-        key = UserInfoApp.find_sol_info_by_alias_in_file(alias)
-        address = str(PublicKey(Keypair.from_secret_key(base58.b58decode(key)).public_key))    
-        balance = sol_app.get_balance(address)
+        key = UserInfoApp.find_solinfo_by_alias_in_file(alias)  # 假设这个方法返回Base58编码的私钥
+        decoded_key = base58.b58decode(key)
+
+        # 检查 decoded_key 是否为元组，如果是，则取第一个元素
+        if isinstance(decoded_key, tuple):
+            decoded_key = decoded_key[0]
+        
+        # 使用解码后的私钥创建 Keypair
+        keypair = Keypair.from_private_key(decoded_key)
+        address = str(keypair.public_key)  # 从 Keypair 获取公钥（地址）
+        balance = sol_app.get_balance(address)  # 查询余额
         log_and_print(f"{alias} SOL_balance {balance}")
         excel_manager.update_info(alias, str(balance), "SOL_balance")
-            
+                
     excel_manager.save_msg_and_stop_service()

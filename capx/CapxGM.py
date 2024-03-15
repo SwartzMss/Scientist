@@ -172,7 +172,6 @@ class CapxGM:
             excel_manager.update_info(alias, f"faucet failed: {e}")
             return False
         
-config_path = rf'\\192.168.3.142\SuperWind\Study\account_config\capx.json'
 
 if __name__ == '__main__':
     app = CapxGM()
@@ -182,7 +181,7 @@ if __name__ == '__main__':
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("CapxGM", log_and_print)
 
-    alais_list = UserInfoApp.find_alias_by_path(config_path)
+    alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
