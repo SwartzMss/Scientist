@@ -208,7 +208,7 @@ class ReikiSign:
 
         try:
             response = self.checkResult()
-            if 'today' in response and isinstance(response['today'], int):
+            if 'today' in response and isinstance(response['today'], int) and response['today'] > 100:
                 today= response["today"]
                 total = response["total"]
                 log_and_print(f"{alias} checkResult already successfully total {total} today {today}")

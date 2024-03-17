@@ -34,7 +34,7 @@ class socket5SwitchProxy:
             else:
                 self.logger(f"Proxy changed but IP verification failed: {proxy_name}")
         # 如果所有代理都尝试过且都失败了，返回False
-        return False
+        return False, proxy_name
 
 
 
