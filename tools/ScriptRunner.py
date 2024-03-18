@@ -101,20 +101,21 @@ class ScriptRunner:
             self.log_and_print(f"Python task execution failed: {e}")
 
     def run_gitbash_task(self, task_name):
-        git_bash_path = self.config[task_name].get('git_bash_path', "C:/Program Files/Git/git-bash.exe")  # Use default if not specified
+        git_bash_path = self.config[task_name].get('git_bash_path', "C:/Program Files/Git/git-bash.exe")  # 使用配置文件中指定的路径，如果未指定，则使用默认路径
         directory = self.config[task_name].get('directory')
-        command = self.config[task_name].get('command')
+        command = self.config[task_name].get('command', 'pull origin master')  # 如果未指定命令，则默认为 'pull origin master'
         
         self.log_and_print(f"Changing directory to: {directory}")
         
-        # 构建执行Git命令的完整命令
-        full_command = f'git -C "{directory}" {command}'
+        # 构建执行 Git 命令的完整命令，确保包含 'origin master'
+        full_command = f'cd "{directory}" && git {command}'
         self.log_and_print(f"Running Git Bash task: {full_command} in {directory}")
         
         try:
             subprocess.run([git_bash_path, '-c', full_command], check=True)
         except subprocess.CalledProcessError as e:
             self.log_and_print(f"Git Bash task execution failed: {e}")
+
 
 
 if __name__ == "__main__":
