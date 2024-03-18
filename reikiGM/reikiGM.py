@@ -238,6 +238,7 @@ class ReikiSign:
             log_and_print(f"{alias} second random msg failed: {e}")
 
         try:
+            time.sleep(2)
             response = self.checkResult()
             today= response["today"]
             total = response["total"]
