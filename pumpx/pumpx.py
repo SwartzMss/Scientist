@@ -29,7 +29,7 @@ from tools.excelWorker import excelWorker
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
-log_file_path = rf'\\192.168.3.142\SuperWind\Study\Pumpx_{current_time}.log'
+log_file_path = rf'\\192.168.3.142\SuperWind\Study\PumpxGM_{current_time}.log'
 
 
 def log_message(text):
