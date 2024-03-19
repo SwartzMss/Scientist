@@ -62,11 +62,12 @@ class XplusGM:
             process = subprocess.Popen(command, shell=True)
             processes.append(process)
         # 等待最后一个命令启动后稍作延时，以确保有足够的时间完成摇一摇动作
-        time.sleep(counts * 0.5)  # 假设每次摇一摇需要0.5秒
+        # time.sleep(counts * 0.5)  # 假设每次摇一摇需要0.5秒
 
         # 确保所有进程都已完成
         for process in processes:
             process.wait()
+        log_and_print(f"yaoyiyao_ldplayer down..")
 
     def close_ldplayer(self):
         """关闭指定索引号的雷电模拟器实例"""
@@ -119,11 +120,13 @@ class XplusGM:
     def find_and_click_element(self, xpath, timeout=5):
         """查找元素并点击"""
         try:
+            time.sleep(3)
             wait = WebDriverWait(self.driver, timeout)
             element = wait.until(EC.presence_of_element_located((By.XPATH, xpath)))
             element.click()
             return True
         except WebDriverException  as e:
+            log_and_print(f"find_and_click_element failed {e}")
             return False
 
     def find_element(self, xpath, timeout=5):
@@ -173,7 +176,7 @@ class XplusGM:
             while(1):
                 log_and_print(f"{alias} countNum = {countNum}")
                 countNum = countNum +1
-                if countNum >= 250:
+                if countNum >= 100:
                     break
                 try:
                     self.connect_to_appium()
@@ -184,12 +187,12 @@ class XplusGM:
                     error_occurred = True
 
                 time.sleep(8) # 这边耗时会等待最开始的加载
-                if not error_occurred:
-                    if self.find_and_click_element('//android.view.View[@text="自動挖礦"]') == True:
-                        log_and_print(f"switch page to start successfully: {self.alias}")
-                    else:
-                        log_and_print(f"switch page  to start failed: {self.alias}")
-                        error_occurred = True
+                # if not error_occurred:
+                #     if self.find_and_click_element('//android.view.View[@text="自動挖礦"]') == True:
+                #         log_and_print(f"switch page to start successfully: {self.alias}")
+                #     else:
+                #         log_and_print(f"switch page  to start failed: {self.alias}")
+                #         error_occurred = True
 
                 if not error_occurred:
                     if self.find_and_click_element('//android.view.View[@text="遊戲"]') == True:	
@@ -233,5 +236,8 @@ class XplusGM:
 # 使用示例
 if __name__ == "__main__":
     app = XplusGM( "com.xplus.wallet", ".MainActivity")
-    app.run("swartz", 30,"emulator-5614")
+    for i in range(4):
+        log_and_print(f"################: {i}次启动")
+        app.run("swartz", 30,"emulator-5614")
+        time.sleep(3)
 
