@@ -75,23 +75,15 @@ class XplusGM:
         subprocess.Popen(command, shell=True)
         log_and_print(f"Closing LDPlayer username={self.alias}...")
 
-    def is_emulator_ready(self):
+    def is_emulator_ready(self, emulator_name):
         """检查模拟器是否准备就绪"""
-        try:
-            result = subprocess.run(['adb', 'devices'], stdout=subprocess.PIPE, text=True, check=True)
-            devices = result.stdout.strip().split('\n')[1:]  # 忽略第一行
-            for device in devices:
-                if self.device_name in device and 'device' in device:
-                    return True
-            return False
-        except subprocess.CalledProcessError as e:
-            log_and_print(f"Error checking emulator status: {str(e)}")
-            return False
+        result = subprocess.run(['adb', 'devices'], stdout=subprocess.PIPE, text=True)
+        return emulator_name in result.stdout
 
     def wait_for_emulator(self, timeout=120):
         """等待模拟器启动并就绪"""
         start_time = time.time()
-        while not self.is_emulator_ready():
+        while not self.is_emulator_ready(self.device_name):
             if (time.time() - start_time) > timeout:
                 raise TimeoutError("Timeout waiting for emulator to be ready.")
             log_and_print("Waiting for emulator to be ready...")
@@ -151,6 +143,7 @@ class XplusGM:
         if self.driver:
             self.driver.quit()
             log_and_print("Appium session ended.")
+        self.driver = None
 
     def run(self, alias, index, device_name):
         self.device_name = device_name
@@ -171,13 +164,6 @@ class XplusGM:
                 log_and_print(f"{alias} firstly wait_for_emulator successfully")
             except Exception as e:
                 log_and_print(f"{alias} firstly wait_for_emulator failed: {e}")
-                sys.exit()
-
-            try:
-                self.connect_to_appium()
-                log_and_print(f"{alias} firstly connect_to_appium successfully")
-            except Exception as e:
-                log_and_print(f"{alias} firstly connect_to_appium failed: {e}")
                 sys.exit()
 
             countNum = 0
@@ -228,10 +214,8 @@ class XplusGM:
                     self.yaoyiyao_ldplayer()
                 self.quit()
                 log_and_print(f" self.quit done: {self.alias}")
-                time.sleep(3)    
-
+                time.sleep(3)
         finally:
-            log_and_print(f" finally start: {self.alias}")
             if error_occurred:
                 self.close_ldplayer()
                 return False
@@ -252,4 +236,3 @@ if __name__ == "__main__":
         log_and_print(f"################: {i}次启动")
         app.run("swartz", 30,"emulator-5614")
         time.sleep(3)
-
