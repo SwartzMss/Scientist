@@ -75,15 +75,23 @@ class XplusGM:
         subprocess.Popen(command, shell=True)
         log_and_print(f"Closing LDPlayer username={self.alias}...")
 
-    def is_emulator_ready(self, emulator_name):
+    def is_emulator_ready(self):
         """检查模拟器是否准备就绪"""
-        result = subprocess.run(['adb', 'devices'], stdout=subprocess.PIPE, text=True)
-        return emulator_name in result.stdout
+        try:
+            result = subprocess.run(['adb', 'devices'], stdout=subprocess.PIPE, text=True, check=True)
+            devices = result.stdout.strip().split('\n')[1:]  # 忽略第一行
+            for device in devices:
+                if self.device_name in device and 'device' in device:
+                    return True
+            return False
+        except subprocess.CalledProcessError as e:
+            log_and_print(f"Error checking emulator status: {str(e)}")
+            return False
 
     def wait_for_emulator(self, timeout=120):
         """等待模拟器启动并就绪"""
         start_time = time.time()
-        while not self.is_emulator_ready(self.device_name):
+        while not self.is_emulator_ready():
             if (time.time() - start_time) > timeout:
                 raise TimeoutError("Timeout waiting for emulator to be ready.")
             log_and_print("Waiting for emulator to be ready...")
@@ -218,8 +226,12 @@ class XplusGM:
                 time.sleep(5)    
                 if not error_occurred:
                     self.yaoyiyao_ldplayer()
+                self.quit()
+                log_and_print(f" self.quit done: {self.alias}")
+                time.sleep(3)    
 
         finally:
+            log_and_print(f" finally start: {self.alias}")
             if error_occurred:
                 self.close_ldplayer()
                 return False
