@@ -37,11 +37,12 @@ class socket5SwitchProxy:
             else:
                 self.logger(f"Proxy changed but IP verification failed: {proxy_name}")
                 
-        if self.last_successful_proxies:
-            random_successful_proxy = random.choice(self.last_successful_proxies)
-            if self.verify_ip_change(random_successful_proxy):
-                self.logger(f"Successfully reused a previously successful proxy: {random_successful_proxy}")
-                return True, random_successful_proxy
+        # 如果传入的代理都失败，尝试之前成功的代理
+        random.shuffle(self.last_successful_proxies)  # 打乱之前成功的代理列表
+        for last_successful_proxy in self.last_successful_proxies:
+            if self.verify_ip_change(last_successful_proxy):
+                self.logger(f"Successfully reused a previously successful proxy: {last_successful_proxy}")
+                return True, last_successful_proxy
         # 如果所有代理都尝试过且都失败了，返回False
         return False, proxy_name
 
