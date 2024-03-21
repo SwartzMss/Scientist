@@ -320,11 +320,15 @@ if __name__ == '__main__':
         proxyName = UserInfoApp.find_socket5proxy_by_alias_in_file(alias)
         if not proxyName:
             log_and_print(f"cannot find proxy username = {alias}")
+            excel_manager.update_info(alias, f"cannot find proxy ")
             continue
-        if proxyApp.change_proxy_until_success(proxyName) == False:
+        result, proxyinfo = proxyApp.change_proxy_until_success(proxyName)
+        if result == False:
+            log_and_print(f"change_proxy_until_success failed {alias}")
+            excel_manager.update_info(alias, f"change_proxy_until_success failed")
             continue
         time.sleep(5)   
-        if(app.run(alias, account) == False):
+        if(app.run(alias, account,proxyinfo) == False):
             failed_list.append((alias, account))
 
     if len(failed_list) == 0:
