@@ -44,7 +44,7 @@ def log_and_print(text):
         log_file.write(message + '\n')
 
 
-class GenomefiGM_:
+class GenomefiGM:
     def __init__(self):
         self.alias = None
         self.session = None
@@ -285,12 +285,12 @@ class GenomefiGM_:
             return False
 
 if __name__ == '__main__':
-    app = GenomefiGM_()
+    app = GenomefiGM()
     proxyApp = socket5SwitchProxy(logger = log_and_print)
     failed_list = []
     retry_list = [] 
     UserInfoApp = UserInfo(log_and_print)
-    excel_manager = excelWorker("GenomefiGM_", log_and_print)
+    excel_manager = excelWorker("GenomefiGM", log_and_print)
 
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
