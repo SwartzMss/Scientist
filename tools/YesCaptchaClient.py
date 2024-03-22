@@ -58,8 +58,8 @@ class YesCaptchaClient:
         if 'taskId' in task_response:
             task_id = task_response['taskId']
             result = self.get_task_result(task_id)
-            if result and 'solution' in result and 'token' in result['solution']:
-                return result['solution']['token']
+            if result and 'solution' in result and 'gRecaptchaResponse' in result['solution']:
+                return result['solution']['gRecaptchaResponse']
             else:
                 raise Exception(f"人机验证失败")
         else:
@@ -67,11 +67,24 @@ class YesCaptchaClient:
 
 # 示例用法
 if __name__ == "__main__":
-    website_url = 'https://artio.faucet.berachain.com'
-    website_key = '0x4AAAAAAARdAuciFArKhVwt'
-    task_type = 'TurnstileTaskProxyless'
+    # berachain
+    # website_url = 'https://artio.faucet.berachain.com'
+    # website_key = '0x4AAAAAAARdAuciFArKhVwt'
+    # task_type = 'TurnstileTaskProxyless'
 
-    captcha_client = YesCaptchaClient()
+    # captcha_client = YesCaptchaClient()
+    # try:
+    #     recaptcha_token = captcha_client.get_recaptcha_token(website_url, website_key, task_type)
+    #     print(f"Recaptcha token: {recaptcha_token}")
+    # except Exception as e:
+    #     print(f"get_recaptcha_token Error: {e}")
+
+    #genomefi
+    website_url = 'https://event.genomefi.io/'
+    website_key = '6LcK_aApAAAAAPAUR8Zo96ZMXGQF12jeUKR2KeGr'
+    task_type = 'NoCaptchaTaskProxyless'
+
+    captcha_client = YesCaptchaClient(client_key="df06ea524cda53aedea083e1c5ec334f656ed3d034874")
     try:
         recaptcha_token = captcha_client.get_recaptcha_token(website_url, website_key, task_type)
         print(f"Recaptcha token: {recaptcha_token}")

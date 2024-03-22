@@ -25,7 +25,7 @@ from tools.UserInfo import UserInfo
 from tools.socket5SwitchProxy import socket5SwitchProxy
 # 现在可以从tools目录导入excelWorker
 from tools.excelWorker import excelWorker
-
+from tools.YesCaptchaClient import YesCaptchaClient
 
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
@@ -43,13 +43,36 @@ def log_and_print(text):
         print(message)
         log_file.write(message + '\n')
 
+class QuestionPicker:
+    def __init__(self, filename = rf'E:\HardCode\web3\Scientist\genomefi\Question.txt'):
+        self.filename = filename
+        self.questions = []
+        self.used_questions = set()
+        self.load_questions()
+
+    def load_questions(self):
+        with open(self.filename, 'r') as file:
+            self.questions = [line.strip() for line in file.readlines() if line.strip()]
+
+    def get_random_question(self):
+        available_questions = list(set(self.questions) - self.used_questions)
+
+        if not available_questions:
+            self.used_questions.clear()
+            available_questions = self.questions.copy()
+
+        question = random.choice(available_questions)
+        self.used_questions.add(question)
+        return question
 
 class GenomefiGM:
     def __init__(self):
+        self.QuestionPickerApp = QuestionPicker()
         self.alias = None
         self.session = None
         self.gaslimit = 200000
         self.account = None
+        self.captcha_client = YesCaptchaClient(logger = log_and_print,client_key = client_key)
         self.headers = {
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9',
@@ -131,12 +154,13 @@ class GenomefiGM:
         res = self.account.sign_message(encode_defunct(text=message))
         return message, res.signature.hex()
 
-    def post_wallet(self,msg, signature):
+    def post_wallet(self,msg, signature,recaptcha_token):
         url = f"https://sazn9rq17l.execute-api.ap-northeast-2.amazonaws.com/staging/user/auth/login/wallet"
 
         payload = {
                 "address":self.account.address,
                 "message":msg,
+                "reCode":recaptcha_token,
                 "signed":signature
         }
         response = self.session.post(
@@ -153,6 +177,18 @@ class GenomefiGM:
         log_and_print(f"{self.alias} get_profile data:{data}")
         return data
 
+
+    def post_chat(self):
+        if self.ischatDone == True:
+            return None
+        url = f"https://sazn9rq17l.execute-api.ap-northeast-2.amazonaws.com/staging/user/event/task/quiz/quest"
+        payload = {"question":self.QuestionPickerApp.get_random_question()}
+        response = self.session.post(
+            url, headers=self.headers,json=payload, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} post_chat data:{data}")
+        return data
+
     def get_status(self):
         url = f"https://sazn9rq17l.execute-api.ap-northeast-2.amazonaws.com/staging/user/event/dashboard/status"
         response = self.session.get(
@@ -162,11 +198,25 @@ class GenomefiGM:
         return data
 
     def get_dashboard(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0:
+            return None
         url = f"https://sazn9rq17l.execute-api.ap-northeast-2.amazonaws.com/staging/user/event/dashboard"
         response = self.session.get(
             url, headers=self.headers, timeout=120)
         data = response.json()
         log_and_print(f"{self.alias} get_dashboard data:{data}")
+        return data
+
+    def get_mygallery(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0:
+            return None
+        url = f"https://sazn9rq17l.execute-api.ap-northeast-2.amazonaws.com/staging/user/event/dashboard/nft/mygallery?page=1"
+        response = self.session.get(
+            url, headers=self.headers, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} get_mygallery data:{data}")
         return data
 
     def post_attendance(self):
@@ -185,10 +235,23 @@ class GenomefiGM:
         log_and_print(f"{self.alias} get_point data:{data}")
         return data
 
+
+    def get_referral(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0:
+            return None
+        url = f"https://app.pump.markets/api/point/referral"
+        response = self.session.get(
+            url, headers=self.headers, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} get_referral data:{data}")
+        return data
+
     def run(self,alias, account,proxyinfo):
         self.create_new_session(proxyinfo)
         self.alias = alias
         self.account = account
+        self.ischatDone = False
         try:
             message, signature = self.signature()
             log_and_print(f"{alias} sign successfully ")
@@ -198,7 +261,18 @@ class GenomefiGM:
             return False
 
         try:
-            response = self.post_wallet(message,signature)
+            website_url = 'https://event.genomefi.io/'
+            website_key = '6LcK_aApAAAAAPAUR8Zo96ZMXGQF12jeUKR2KeGr'
+            task_type = 'NoCaptchaTaskProxyless'
+            recaptcha_token = self.captcha_client.get_recaptcha_token(website_url, website_key, task_type)
+            log_and_print(f"{alias} get_recaptcha_token successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_recaptcha_token failed: {e}")
+            excel_manager.update_info(alias, f"get_recaptcha_token failed: {e}")
+            return False
+
+        try:
+            response = self.post_wallet(message,signature,recaptcha_token)
             token = response['accessToken']
             self.headers['authorization'] = 'Bearer ' + token
             log_and_print(f"{alias} post_wallet successfully ")
@@ -216,11 +290,35 @@ class GenomefiGM:
             return False
 
         try:
+            response = self.get_mygallery()
+            log_and_print(f"{alias} get_mygallery successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_mygallery failed: {e}")
+            excel_manager.update_info(alias, f"get_mygallery failed: {e}")
+            return False
+
+        try:
             response = self.get_dashboard()
             log_and_print(f"{alias} get_dashboard successfully ")
         except Exception as e:
             log_and_print(f"{alias} get_dashboard failed: {e}")
             excel_manager.update_info(alias, f"get_dashboard failed: {e}")
+            return False
+
+        try:
+            response = self.get_status()
+            log_and_print(f"{alias} prepare get_status successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} prepare get_status failed: {e}")
+            excel_manager.update_info(alias, f"prepare get_status failed: {e}")
+            return False
+
+        try:
+            response = self.get_profile()
+            log_and_print(f"{alias}  get_profile successfully ")
+        except Exception as e:
+            log_and_print(f"{alias}  get_profile failed: {e}")
+            excel_manager.update_info(alias, f" get_profile failed: {e}")
             return False
 
         try:
@@ -232,29 +330,112 @@ class GenomefiGM:
             excel_manager.update_info(alias, f"first get_point failed: {e}")
             return False
 
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 1:
+            try:
+                response = self.post_chat()
+                if response == None or response['success'] == False:
+                    self.ischatDone = True
+                log_and_print(f"{alias} 1  post_chat successfully self.ischatDone = {self.ischatDone}")
+            except Exception as e:
+                log_and_print(f"{alias} 1 post_chat failed: {e}")
+                excel_manager.update_info(alias, f" post_chat failed: {e}")
+                return False
+
+        try:
+            response = self.get_profile()
+            log_and_print(f"{alias}  get_profile successfully ")
+        except Exception as e:
+            log_and_print(f"{alias}  get_profile failed: {e}")
+            excel_manager.update_info(alias, f" get_profile failed: {e}")
+            return False
+
+        try:
+            response = self.post_chat()
+            if response == None or response['success'] == False:
+                self.ischatDone = True
+            log_and_print(f"{alias} 2  post_chat successfully self.ischatDone = {self.ischatDone}")
+        except Exception as e:
+            log_and_print(f"{alias} 2 post_chat failed: {e}")
+            excel_manager.update_info(alias, f" post_chat failed: {e}")
+            return False
+
+        try:
+            response = self.get_dashboard()
+            log_and_print(f"{alias} get_dashboard successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_dashboard failed: {e}")
+            excel_manager.update_info(alias, f"get_dashboard failed: {e}")
+            return False
+
+        try:
+            response = self.post_chat()
+            if response == None or response['success'] == False:
+                self.ischatDone = True
+            log_and_print(f"{alias} 3  post_chat successfully self.ischatDone = {self.ischatDone}")
+        except Exception as e:
+            log_and_print(f"{alias} 3 post_chat failed: {e}")
+            excel_manager.update_info(alias, f" post_chat failed: {e}")
+            return False
+
+        try:
+            response = self.get_mygallery()
+            log_and_print(f"{alias} get_mygallery successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_mygallery failed: {e}")
+            excel_manager.update_info(alias, f"get_mygallery failed: {e}")
+            return False
+
+        try:
+            response = self.post_chat()
+            if response == None or response['success'] == False:
+                self.ischatDone = True
+            log_and_print(f"{alias} 4  post_chat successfully self.ischatDone = {self.ischatDone}")
+        except Exception as e:
+            log_and_print(f"{alias} 4 post_chat failed: {e}")
+            excel_manager.update_info(alias, f" 4 post_chat failed: {e}")
+            return False
+
+        try:
+            response = self.get_mygallery()
+            log_and_print(f"{alias} get_mygallery successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_mygallery failed: {e}")
+            excel_manager.update_info(alias, f"get_mygallery failed: {e}")
+            return False
+
+
+        try:
+            response = self.post_chat()
+            if response == None or response['success'] == False:
+                self.ischatDone = True
+            log_and_print(f"{alias} 5  post_chat successfully self.ischatDone = {self.ischatDone}")
+        except Exception as e:
+            log_and_print(f"{alias} 5 post_chat failed: {e}")
+            excel_manager.update_info(alias, f" 5 post_chat failed: {e}")
+            return False
+
+
         try:
             response = self.get_status()
             isAttendanceToday = response['data']['isAttendanceToday']
-            if isAttendanceToday == 1:
-                log_and_print(f"{alias} already AttendanceToday successfully points = {points}")
-                excel_manager.update_info(alias, f"already AttendanceToday successfully points = {points}")
-                return True
             log_and_print(f"{alias} frist get_status successfully ")
         except Exception as e:
             log_and_print(f"{alias} frist get_status failed: {e}")
             excel_manager.update_info(alias, f"frist get_status failed: {e}")
             return False
 
-        try:
-            response = self.post_attendance()
-            if response['success'] == True:
-                log_and_print(f"{alias} post_attendance successfully ")
-            else:
-                raise Exception(f"Error: {response}")
-        except Exception as e:
-            log_and_print(f"{alias} post_attendance failed: {e}")
-            excel_manager.update_info(alias, f"post_attendance failed: {e}")
-            return False
+        if isAttendanceToday == 0:
+            try:
+                response = self.post_attendance()
+                if response['success'] == True:
+                    log_and_print(f"{alias} post_attendance successfully ")
+                else:
+                    raise Exception(f"Error: {response}")
+            except Exception as e:
+                log_and_print(f"{alias} post_attendance failed: {e}")
+                excel_manager.update_info(alias, f"post_attendance failed: {e}")
+                return False
 
         try:
             response = self.get_profile()
@@ -285,12 +466,13 @@ class GenomefiGM:
             return False
 
 if __name__ == '__main__':
-    app = GenomefiGM()
     proxyApp = socket5SwitchProxy(logger = log_and_print)
     failed_list = []
     retry_list = [] 
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("GenomefiGM", log_and_print)
+    client_key = UserInfoApp.find_yesCaptch_clientkey()
+    app = GenomefiGM()
 
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
