@@ -235,5 +235,6 @@ if __name__ == "__main__":
     app = XplusGM( "com.xplus.wallet", ".MainActivity")
     for i in range(4):
         log_and_print(f"################: {i}次启动")
-        app.run("swartz", 30,"emulator-5614")
+        #app.run("swartz", 30,"emulator-5614")
+        app.run("JP07", 27,"emulator-5608")
         time.sleep(3)
