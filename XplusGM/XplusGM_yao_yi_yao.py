@@ -171,7 +171,7 @@ class XplusGM:
             while(1):
                 log_and_print(f"{alias} countNum = {countNum}")
                 countNum = countNum +1
-                if countNum >= 100:
+                if countNum >= 150:
                     break
                 try:
                     self.connect_to_appium()

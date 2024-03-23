@@ -177,6 +177,17 @@ class GenomefiGM:
         log_and_print(f"{self.alias} get_profile data:{data}")
         return data
 
+    def post_nft(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0:
+            return None
+        url = f"https://sazn9rq17l.execute-api.ap-northeast-2.amazonaws.com/staging/user/event/task/quiz/nft"
+        payload = {"prompt":self.QuestionPickerApp.get_random_question()}
+        response = self.session.post(
+            url, headers=self.headers,json=payload, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} post_nft data:{data}")
+        return data
 
     def post_chat(self):
         if self.ischatDone == True:
@@ -348,6 +359,15 @@ class GenomefiGM:
         except Exception as e:
             log_and_print(f"{alias}  get_profile failed: {e}")
             excel_manager.update_info(alias, f" get_profile failed: {e}")
+            return False
+
+
+        try:
+            response = self.post_nft()
+            log_and_print(f"{alias}  post_nft successfully")
+        except Exception as e:
+            log_and_print(f"{alias}  post_nft failed: {e}")
+            excel_manager.update_info(alias, f" post_nft failed: {e}")
             return False
 
         try:
