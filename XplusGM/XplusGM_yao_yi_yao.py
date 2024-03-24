@@ -57,7 +57,7 @@ class XplusGM:
 
     def yaoyiyao_ldplayer(self, counts=50):
         time.sleep(3)
-        command = '"E:\\leidian\\LDPlayer9\\dnconsole.exe" action --name "swartz" --key call.shake --value null'
+        command = f'"E:\\leidian\\LDPlayer9\\dnconsole.exe" action --name "{self.alias}" --key call.shake --value null'
         processes = []
         for _ in range(counts):
             process = subprocess.Popen(command, shell=True)
@@ -197,7 +197,7 @@ class XplusGM:
                         error_occurred = True
 
                 if not error_occurred:
-                    if self.find_and_click_element('//android.view.View[@resource-id="app"]/android.view.View[1]/android.view.View[2]/android.view.View/android.view.View[4]') == True:	
+                    if self.find_and_click_element('//android.view.View[@resource-id="app"]/android.view.View[1]/android.view.View[2]/android.view.View/android.view.View[3]/android.view.View[2]') == True:	
                         log_and_print(f"game clicked succeed: {self.alias}")
                     else:
                         log_and_print(f"game clicked failed: {self.alias}")
