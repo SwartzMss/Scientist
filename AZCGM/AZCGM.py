@@ -109,6 +109,7 @@ class AZCGM:
             element.click()
             return True
         except WebDriverException  as e:
+            log_and_print(f"find_and_click_element {xpath} failed: {e}")
             return False
 
     def find_element(self, xpath, timeout=5):
@@ -177,7 +178,8 @@ class AZCGM:
                     log_and_print(f"recheck successfully: {self.alias}")
                     excel_manager.update_info(self.alias, f"recheck successfully")
                 elif self.find_and_click_element('//android.widget.TextView[@text="登录或注册"]')  == True:
-                    username, passWord = UserInfoApp.find_username_and_password_by_alias_in_file(alias)
+                    log_and_print(f"登录或注册: {self.alias}")
+                    username, passWord,access_token, refresh_token = UserInfoApp.find_outlookinfo_by_alias_in_file(alias)
                     self.find_and_input_element('//android.widget.EditText[@text="Example@gmail.com"]', username)
                     time.sleep(1)
                     self.find_and_input_element('//android.widget.EditText[@text="密码"]', "*Ab910220a")
@@ -202,7 +204,7 @@ class AZCGM:
 
         finally:
             # Regardless of what happened above, try to clean up.
-            log_and_print(f"{self.alias} cleanup_resources")
+            log_and_print(f"{self.alias} cleanup_resources error_occurred = {error_occurred}")
             if error_occurred:
                 self.close_ldplayer()
                 return False

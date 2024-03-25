@@ -236,5 +236,6 @@ if __name__ == "__main__":
     for i in range(4):
         log_and_print(f"################: {i}次启动")
         #app.run("swartz", 30,"emulator-5614")
-        app.run("JP07", 27,"emulator-5608")
+        #app.run("JP07", 27,"emulator-5608")
+        app.run("JP08", 28,"emulator-5610")
         time.sleep(3)
