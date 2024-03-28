@@ -238,5 +238,6 @@ if __name__ == "__main__":
         #app.run("JP07", 27,"emulator-5608")
         #app.run("JP08", 28,"emulator-5610")
         #app.run("JP09", 29,"emulator-5612")
-        app.run("JP06", 26,"emulator-5606")
+        #app.run("JP06", 26,"emulator-5606")
+        app.run("MSS", 2,"emulator-5558")
         time.sleep(3)

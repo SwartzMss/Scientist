@@ -38,6 +38,10 @@ blockchains = {
     "matic": {
         "url": "https://rpc-mainnet.maticvigil.com",
         "chain_id": 137
+    },
+    "arb_eth": {
+        "url": "https://arbitrum.llamarpc.com",
+        "chain_id": 42161
     }
 }
 
