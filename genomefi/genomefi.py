@@ -498,7 +498,6 @@ if __name__ == '__main__':
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
-        #key = "0xb892f33a7e0fe6d2ff6c0454211a996c7e57288b6d2f8cbecc6b1b5f2563eaa7"
         account = web3.Account.from_key(key)    
         proxyName = UserInfoApp.find_socket5proxy_by_alias_in_file(alias)
         if not proxyName:
@@ -509,6 +508,7 @@ if __name__ == '__main__':
         if result == False:
             log_and_print(f"change_proxy_until_success failed {alias}")
             excel_manager.update_info(alias, f"change_proxy_until_success failed")
+            retry_list.append((alias, account))
             continue
 
         if(app.run(alias, account,proxyinfo) == False):

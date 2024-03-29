@@ -309,6 +309,7 @@ if __name__ == '__main__':
         if result == False:
             log_and_print(f"change_proxy_until_success failed {alias}")
             excel_manager.update_info(alias, f"change_proxy_until_success failed")
+            retry_list.append((alias, account))
             continue
 
         if(app.run(alias, account,proxyinfo) == False):
