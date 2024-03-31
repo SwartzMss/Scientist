@@ -171,7 +171,7 @@ class XplusGM:
             while(1):
                 log_and_print(f"{alias} countNum = {countNum}")
                 countNum = countNum +1
-                if countNum >= 150:
+                if countNum >= 120:
                     break
                 try:
                     self.connect_to_appium()
@@ -241,5 +241,6 @@ if __name__ == "__main__":
         #app.run("JP06", 26,"emulator-5606")
         #smd 01 02 sbm sme
         #app.run("MSS", 2,"emulator-5558")
-        app.run("SME1102", 1,"emulator-5556")
+        #app.run("SME1102", 1,"emulator-5556")
+        app.run("SMD01", 6,"emulator-5566")
         time.sleep(3)

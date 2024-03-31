@@ -219,6 +219,17 @@ class MintChainGM:
         log_and_print(f"{self.alias} post_claim data:{data}")
         return data
 
+
+    def get_open(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0 or energy == 0:
+            return None
+        url = f"https://www.mintchain.io/api/tree/turntable/open"
+        response = self.session.get(url, headers=self.headers, timeout=10)
+        data = response.json()
+        log_and_print(f"{self.alias} get_open data:{data}")
+        return data
+
     def post_inject(self,energy):
         run_or_not = random.randint(0, 1)  # 生成 0 或 1
         if run_or_not == 0 or energy == 0:
@@ -359,6 +370,7 @@ class MintChainGM:
         try:
             response = self.get_tasklist()
             response = self.get_experiments()
+            response = self.get_open()
             #这不校验结果
         except Exception as e:
             pass
