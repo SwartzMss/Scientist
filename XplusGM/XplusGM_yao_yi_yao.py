@@ -57,18 +57,26 @@ class XplusGM:
 
     def yaoyiyao_ldplayer(self, counts=50):
         time.sleep(3)
+        log_and_print("yaoyiyao_ldplayer start..")
         command = f'"E:\\leidian\\LDPlayer9\\dnconsole.exe" action --name "{self.alias}" --key call.shake --value null'
         processes = []
-        for _ in range(counts):
-            process = subprocess.Popen(command, shell=True)
-            processes.append(process)
-        # 等待最后一个命令启动后稍作延时，以确保有足够的时间完成摇一摇动作
-        # time.sleep(counts * 0.5)  # 假设每次摇一摇需要0.5秒
+        for i in range(counts):
+            log_and_print(f"yaoyiyao_ldplayer count {i}..")
+            try:
+                process = subprocess.Popen(command, shell=True, stderr=subprocess.PIPE)
+                processes.append(process)
+            except Exception as e:
+                log_and_print(f"Error starting process: {e}")
 
-        # 确保所有进程都已完成
+        # 等待所有进程完成
         for process in processes:
             process.wait()
-        log_and_print(f"yaoyiyao_ldplayer down..")
+        for process in processes:
+            _, stderr = process.communicate()
+            if stderr:
+                log_and_print(f"Process error: {stderr.decode()}")
+
+        log_and_print("yaoyiyao_ldplayer down..")
 
     def close_ldplayer(self):
         """关闭指定索引号的雷电模拟器实例"""
@@ -196,7 +204,7 @@ class XplusGM:
                         log_and_print(f"小程式 clicked failed: {self.alias}")
                         error_occurred = True
                 if not error_occurred:
-                    if self.find_and_click_element('//android.view.View[@resource-id="app"]/android.view.View[1]/android.view.View[2]/android.view.View/android.view.View[8]') == True:	
+                    if self.find_and_click_element('//android.view.View[@resource-id="app"]/android.view.View[1]/android.view.View[2]/android.view.View[1]/android.view.View[7]') == True:	
                         log_and_print(f"game clicked succeed: {self.alias}")
                     else:
                         log_and_print(f"game clicked failed: {self.alias}")
