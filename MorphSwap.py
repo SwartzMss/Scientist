@@ -104,6 +104,32 @@ class MorphSwapGM:
         return Decimal(balance_bera)
 
 
+    def get_approval_amount(self):
+        contract_abi = [
+            {
+                "type": "function",
+                "name": "allowance",
+                "inputs": [
+                    {"name": "", "type": "address", "internalType": "address"},
+                    {"name": "", "type": "address", "internalType": "address"}
+                ],
+                "outputs": [
+                    {"name": "", "type": "uint256", "internalType": "uint256"}
+                ],
+                "stateMutability": "view"
+            },
+        ]
+        contract_address = Web3.to_checksum_address("0x5F4c7D793D898e64eddd1fC82D27EcfB5F6e4596")
+        spender_address = Web3.to_checksum_address("0xcb95f07B1f60868618752CeaBBe4e52a1f564336")
+        contract = self.web3.eth.contract(address = contract_address, abi=contract_abi)
+        try:
+            allowance = contract.functions.allowance(self.account.address, spender_address).call()
+            return allowance
+        except Exception as e:
+            excel_manager.update_info(self.alias, f" allowance failed: {e}")
+        return None
+
+
     def swap_eth_to_morph(self, alias, private_key, amount):
         self.account = self.web3.eth.account.from_key(private_key) 
 
