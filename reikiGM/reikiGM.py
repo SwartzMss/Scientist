@@ -79,7 +79,7 @@ class ReikiSign:
             "address": self.account.address
         }
         log_and_print(f"address:{self.account.address}")
-        response = session.post(
+        response = self.session.post(
             url, headers=self.headers,json=data, timeout=10)
         log_and_print(f"{self.alias} getNonce response.status_code:{response.status_code}")
         data = response.json()
@@ -103,7 +103,7 @@ class ReikiSign:
             "challenge": json.dumps({"msg": msg}),
             "signature": self.signature
         }
-        response = session.post(
+        response = self.session.post(
             url, headers=self.headers,json=data, timeout=10)
         log_and_print(f"{self.alias} postChallenge response.status_code:{response.status_code}")
         data = response.json()
@@ -115,7 +115,7 @@ class ReikiSign:
         if run_or_not == 0:
             return None
         url = f"https://reiki.web3go.xyz/ai/console/api/info"
-        response = session.get(
+        response = self.session.get(
             url, headers=self.headers, timeout=10)
         log_and_print(f"{self.alias} getInfo response.status_code:{response.status_code}")
         data = response.json()
@@ -127,7 +127,7 @@ class ReikiSign:
         if run_or_not == 0:
             return None
         url = f"https://reiki.web3go.xyz/ai/console/api/account/profile"
-        response = session.get(
+        response = self.session.get(
             url, headers=self.headers, timeout=10)
         log_and_print(f"{self.alias} getProfile response.status_code:{response.status_code}")
         data = response.json()
@@ -139,7 +139,7 @@ class ReikiSign:
         if run_or_not == 0:
             return None
         url = f"https://reiki.web3go.xyz/ai/api/home/suggested_question"
-        response = session.get(
+        response = self.session.get(
             url, headers=self.headers, timeout=10)
         log_and_print(f"{self.alias} getSuggested_question response.status_code:{response.status_code}")
         data = response.json()
@@ -151,7 +151,7 @@ class ReikiSign:
         if run_or_not == 0:
             return None
         url = f"https://reiki.web3go.xyz/ai/api/home/suggested_bot"
-        response = session.get(
+        response = self.session.get(
             url, headers=self.headers, timeout=10)
         log_and_print(f"{self.alias} getSuggested_bot response.status_code:{response.status_code}")
         data = response.json()
@@ -161,7 +161,7 @@ class ReikiSign:
     def checkin(self):
         current_date = datetime.utcnow().date().isoformat()
         url = f"https://reiki.web3go.xyz/api/checkin?day={current_date}"
-        response = session.put(
+        response = self.session.put(
             url, headers=self.headers, timeout=10)
         log_and_print(f"{self.alias} checkin response.status_code:{response.status_code}")
         data = response.json()
@@ -170,7 +170,7 @@ class ReikiSign:
 
     def checkResult(self):
         url = f"https://reiki.web3go.xyz/api/GoldLeaf/me"
-        response = session.get(
+        response = self.session.get(
             url, headers=self.headers, timeout=10)
         log_and_print(f"{self.alias} checkResult response.status_code:{response.status_code}")
         data = response.json()
