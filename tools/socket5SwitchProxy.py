@@ -40,6 +40,7 @@ class socket5SwitchProxy:
         # 如果传入的代理都失败，尝试之前成功的代理
         random.shuffle(self.last_successful_proxies)  # 打乱之前成功的代理列表
         for last_successful_proxy in self.last_successful_proxies:
+            time.sleep(3)
             if self.verify_ip_change(last_successful_proxy):
                 self.logger(f"Successfully reused a previously successful proxy: {last_successful_proxy}")
                 return True, last_successful_proxy

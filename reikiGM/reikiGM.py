@@ -9,6 +9,7 @@ import random
 from datetime import datetime
 import json
 import os
+from fake_useragent import UserAgent
 
 # 获取当前脚本的绝对路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -45,6 +46,7 @@ class ReikiSign:
         self.alias = None
         self.account = None
         self.nonce = None
+        self.session = None
         self.signature = None
         self.iso_date_string = None
         self.headers = {
@@ -63,6 +65,14 @@ class ReikiSign:
             'sec-ch-ua-platform': '"Windows"',
         }
 
+    def create_new_session(self,proxyinfo):
+        ua = UserAgent()
+        self.headers['user-agent'] = ua.random
+        self.headers.pop('Authorization', None)
+        self.session = requests.Session()
+        self.session.cookies.clear()
+        self.session.proxies = proxyinfo
+        
     def getNonce(self):
         url = "https://reiki.web3go.xyz/api/account/web3/web3_nonce"
         data={
@@ -167,7 +177,8 @@ class ReikiSign:
         log_and_print(f"{self.alias} checkResult response:{data}")
         return data
 
-    def run(self,alias, account):
+    def run(self,alias, account,proxyinfo):
+        self.create_new_session(proxyinfo)
         self.alias = alias
         self.account = account
         try:
@@ -250,7 +261,6 @@ class ReikiSign:
             return False       
 
 if __name__ == '__main__':
-    session = requests.Session()
     app = ReikiSign()
     proxyApp = socket5SwitchProxy(logger = log_and_print)
     retry_list = []
@@ -273,8 +283,7 @@ if __name__ == '__main__':
             excel_manager.update_info(alias, f"change_proxy_until_success failed")
             retry_list.append((alias, account))
             continue
-        session.proxies = proxyinfo
-        if(app.run(alias, account) == False):
+        if(app.run(alias, account,proxyinfo) == False):
             retry_list.append((alias, account))
 
     if len(retry_list) != 0:
@@ -293,8 +302,7 @@ if __name__ == '__main__':
             log_and_print(f"change_proxy_until_success failed {alias}")
             excel_manager.update_info(alias, f"change_proxy_until_success failed")
             continue
-        session.proxies = proxyinfo
-        if(app.run(alias, account) == False):
+        if(app.run(alias, account,proxyinfo) == False):
             failed_list.append((alias, account))
 
     if len(failed_list) == 0:
