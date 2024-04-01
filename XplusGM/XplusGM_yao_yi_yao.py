@@ -250,5 +250,6 @@ if __name__ == "__main__":
         #smd 01 02 sbm sme
         #app.run("MSS", 2,"emulator-5558")
         #app.run("SME1102", 1,"emulator-5556")
-        app.run("SMD01", 6,"emulator-5566")
+        #app.run("SMD01", 6,"emulator-5566")
+        app.run("SMD02", 7,"emulator-5568")
         time.sleep(3)
