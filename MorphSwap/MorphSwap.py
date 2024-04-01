@@ -328,14 +328,14 @@ if __name__ == "__main__":
     time.sleep(5)
 
     # swap_eth_to_morph
-    # alais_list = UserInfoApp.find_alias_by_path()
-    # for alias in alais_list:
-    #     time.sleep(2)
-    #     log_and_print(f"statring running by alias {alias}")
-    #     private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
-    #     app.approve_action(alias, private_key)
+    alais_list = UserInfoApp.find_alias_by_path()
+    for alias in alais_list:
+        time.sleep(2)
+        log_and_print(f"statring running by alias {alias}")
+        private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
+        app.approve_action(alias, private_key)
         
-    # app.check_all_transaction_for_Approve()
-    # app.batch_swap_usdt_to_morph()
-    # app.check_all_transaction_for_SwapFromUSDTtoMorph()
+    app.check_all_transaction_for_Approve()
+    app.batch_swap_usdt_to_morph()
+    app.check_all_transaction_for_SwapFromUSDTtoMorph()
     excel_manager.save_msg_and_stop_service()
