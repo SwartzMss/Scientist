@@ -66,8 +66,10 @@ class QuestionPicker:
         return question
 
 class XterioGM:
-    def __init__(self):
+    def __init__(self, rpc_url="https://xterio.alt.technology", chain_id=112358):
         #self.QuestionPickerApp = QuestionPicker()
+        self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
+        self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.alias = None
         self.session = None
         self.gaslimit = 200000
@@ -134,7 +136,37 @@ class XterioGM:
         log_and_print(f"{self.alias} get_point data:{data}")
         return data
 
+    def get_nonce(self):
+        """获取当前账户的交易数，以确定nonce."""
+        return self.rpc.get_transaction_nonce(self.account.address)['result']
 
+    def encodeABI_Nonce(self):
+        nonce = self.get_nonce()
+        encoded_data = encode(
+            ["uint8"],
+            [nonce]
+        )
+        encoded_data_hex = encoded_data.hex()
+        log_and_print(f"encodeABI_Nonce = {encoded_data_hex}")
+        return encoded_data_hex
+
+    def claimUtility(self):
+        __contract_addr = Web3.to_checksum_address("0xBeEDBF1d1908174b4Fc4157aCb128dA4FFa80942")
+        param = self.encodeABI_Nonce(amount)
+        MethodID="0x8e6e1450" 
+        try:
+            data = MethodID + param
+            gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
+            response = self.rpc.transfer(
+                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+            if 'error' in response:
+                raise Exception(f"Error: {response}")
+            hasResult = response["result"]
+            log_and_print(f"{alias} approve_action successfully hash = {hasResult}")
+            self.QueueForApprovalResult.append((alias, private_key, hasResult, amount))
+        except Exception as e:
+            log_and_print(f"{alias} approve_action failed: {e}")
+            excel_manager.update_info(alias, f" approve_action failed: {e}", "approve_action")
     def run(self,alias, account,proxyinfo):
         self.create_new_session(proxyinfo)
         self.alias = alias
