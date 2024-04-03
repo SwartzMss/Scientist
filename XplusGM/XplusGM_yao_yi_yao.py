@@ -204,7 +204,7 @@ class XplusGM:
                         log_and_print(f"小程式 clicked failed: {self.alias}")
                         error_occurred = True
                 if not error_occurred:
-                    if self.find_and_click_element('//android.view.View[@resource-id="app"]/android.view.View[1]/android.view.View[2]/android.view.View[1]/android.view.View[7]') == True:	
+                    if self.find_and_click_element('//android.view.View[@resource-id="app"]/android.view.View[1]/android.view.View[2]/android.view.View/android.view.View[8]') == True:	
                         log_and_print(f"game clicked succeed: {self.alias}")
                     else:
                         log_and_print(f"game clicked failed: {self.alias}")

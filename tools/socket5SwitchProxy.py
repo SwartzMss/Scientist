@@ -13,7 +13,7 @@ class socket5SwitchProxy:
     def verify_ip_change(self,proxy_name):
         """验证IP地址是否成功切换"""
         try:
-            response = requests.get("https://myip.ipip.net/", timeout=60, proxies=proxy_name)
+            response = requests.get("http://icanhazip.com", timeout=20, proxies=proxy_name)
             if response.status_code == 200:
                 self.logger(f"Current IP Info: {response.text}")
                 if proxy_name not in self.last_successful_proxies:

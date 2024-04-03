@@ -59,7 +59,7 @@ class clashSwitchProxy:
     def verify_ip_change(self):
         """验证IP地址是否成功切换"""
         try:
-            response = requests.get("https://myip.ipip.net/", timeout=60)
+            response = requests.get("http://icanhazip.com", timeout=60)
             if response.status_code == 200:
                 self.logger(f"Current IP Info: {response.text}")
                 return True
