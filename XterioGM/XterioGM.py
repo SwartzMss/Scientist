@@ -10,16 +10,17 @@ import urllib
 import sys
 import secrets
 import requests
-import datetime
+from web3 import Web3
 from fake_useragent import UserAgent
 from eth_account.messages import encode_defunct
+from eth_abi import encode
 # 获取当前脚本的绝对路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # 获取当前脚本的父目录
 parent_dir = os.path.dirname(script_dir)
 sys.path.append(parent_dir)
-
-
+from datetime import datetime
+from tools.rpc import Rpc
 # 现在可以从tools目录导入UserInfo
 from tools.UserInfo import UserInfo
 from tools.socket5SwitchProxy import socket5SwitchProxy
@@ -28,13 +29,13 @@ from tools.excelWorker import excelWorker
 from tools.YesCaptchaClient import YesCaptchaClient
 
 # 获取当前时间并格式化为字符串
-current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+current_time = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
 log_file_path = rf'\\192.168.3.142\SuperWind\Study\XterioGM_{current_time}.log'
 
 
 def log_message(text):
-    timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return f"{timestamp} - {text}"
 
 def log_and_print(text):
@@ -67,7 +68,6 @@ class QuestionPicker:
 
 class XterioGM:
     def __init__(self, rpc_url="https://xterio.alt.technology", chain_id=112358):
-        #self.QuestionPickerApp = QuestionPicker()
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.alias = None
@@ -136,23 +136,46 @@ class XterioGM:
         log_and_print(f"{self.alias} get_point data:{data}")
         return data
 
+    def check_transaction_status(self, tx_hash, timeout=300, interval=10):
+        """检查交易的状态，返回是否确认和交易状态。使用计数器实现超时。"""
+        max_attempts = timeout // interval  # 计算最大尝试次数
+        attempts = 0  # 初始化尝试次数计数器
+
+        while attempts < max_attempts:  # 循环直到达到最大尝试次数
+            try:
+                receipt = self.web3.eth.get_transaction_receipt(tx_hash)                
+                if receipt is not None:
+                    if receipt.status == 1:
+                        return True, "success"  # 交易已确认且成功
+                    else:
+                        return False, "failure"  # 交易已确认但失败
+            except Exception as e:
+                log_and_print(f"Error checking transaction status: {e}")
+            
+            time.sleep(interval)  # 等待一段时间再次检查
+            attempts += 1  # 更新尝试次数
+
+        # 超时后返回False，表示交易状态未知或未确认，状态为挂起
+        return False, "pending"
+
+
     def get_nonce(self):
         """获取当前账户的交易数，以确定nonce."""
         return self.rpc.get_transaction_nonce(self.account.address)['result']
 
-    def encodeABI_Nonce(self):
-        nonce = self.get_nonce()
+    def encodeABI_claimUtility(self,taskNum):
         encoded_data = encode(
             ["uint8"],
-            [nonce]
+            [taskNum]
         )
         encoded_data_hex = encoded_data.hex()
-        log_and_print(f"encodeABI_Nonce = {encoded_data_hex}")
+        log_and_print(f"encodeABI_claimUtility = {encoded_data_hex}")
         return encoded_data_hex
 
-    def claimUtility(self):
+    def claimUtility(self,taskNum):
+        log_and_print(f"{alias} claimUtility  taskNum {taskNum}")
         __contract_addr = Web3.to_checksum_address("0xBeEDBF1d1908174b4Fc4157aCb128dA4FFa80942")
-        param = self.encodeABI_Nonce(amount)
+        param = self.encodeABI_claimUtility(taskNum)
         MethodID="0x8e6e1450" 
         try:
             data = MethodID + param
@@ -160,13 +183,131 @@ class XterioGM:
             response = self.rpc.transfer(
                 self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
             if 'error' in response:
-                raise Exception(f"Error: {response}")
+                raise Exception(f"action Error: {response}")
             hasResult = response["result"]
-            log_and_print(f"{alias} approve_action successfully hash = {hasResult}")
-            self.QueueForApprovalResult.append((alias, private_key, hasResult, amount))
+            txIsSucceed,msg = self.check_transaction_status(hasResult)
+            if  txIsSucceed != True:
+                raise Exception(f"check_transaction_status Error: {msg}")
+            response = self.post_triggert(hasResult)
+            if response["err_code"] != 0:
+                raise Exception(f"post_triggert Error: {response}")
         except Exception as e:
-            log_and_print(f"{alias} approve_action failed: {e}")
-            excel_manager.update_info(alias, f" approve_action failed: {e}", "approve_action")
+            log_and_print(f"{alias} claimUtility  failed: {e}")
+            excel_manager.update_info(alias, f" claimUtility failed: {e}")
+            return False
+
+    def post_triggert(self,txHash):
+        url = f"https://api.xter.io/baas/v1/event/trigger"
+
+        payload = {
+                "eventType":"PalioIncubator::*",
+                "network":"XTERIO",
+                "txHash":txHash,
+        }
+        response = self.session.post(
+            url, headers=self.headers,json=payload, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} post_triggert data:{data}")
+        return data
+
+
+
+    def post_prop(self,taskNum):
+        url = f"https://api.xter.io/palio/v1/user/{self.account.address}/prop"
+
+        payload = {
+                "prop_id": taskNum
+        }
+        response = self.session.post(
+            url, headers=self.headers,json=payload, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} taskNum {taskNum} post_prop data:{data}")
+        return data
+
+    def get_tasks(self):
+        url = f"https://api.xter.io/palio/v1/user/{self.account.address}/task"
+        response = self.session.get(
+            url, headers=self.headers, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} get_tasks data:{data}")
+        return data
+
+    def get_incubation(self):
+        url = f"https://api.xter.io/palio/v1/user/{self.account.address}/incubation"
+        response = self.session.get(
+            url, headers=self.headers, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} get_incubation data:{data}")
+        return data
+
+    def analyze_incubation(self, data):
+        # 获取props数组
+        props = data['data']['props']
+
+        # 获取当前日期，用于比较（此处需根据实际情况调整）
+        current_date = datetime.utcnow().date()
+
+        # 分类存储props_id
+        need_claimUtility = []
+        claimed_but_not_proped = []
+
+        for prop in props:
+            # 提取并转换UpdatedAt日期
+            updated_at = datetime.strptime(prop['UpdatedAt'].split('T')[0], "%Y-%m-%d").date()
+            
+            # 检查是否需要claimUtility或prop
+            if prop['total'] > prop['cons_total']:
+                # claimUtility已执行但prop未执行
+                claimed_but_not_proped.append(prop['props_id'])
+            elif prop['total'] == prop['cons_total'] and updated_at < current_date:
+                # 需要执行claimUtility
+                need_claimUtility.append(prop['props_id'])
+
+        # 返回结果
+        return need_claimUtility, claimed_but_not_proped
+
+    def post_task(self,taskNum):
+        url = f"https://api.xter.io/palio/v1/user/{self.account.address}/task"
+        payload = {
+                "task_id": taskNum
+        }
+        response = self.session.post(
+            url, headers=self.headers,json=payload, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} post_task taskNum {taskNum} data:{data}")
+        return data
+
+    def get_ticket(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0 or energy == 0:
+            return None
+        url = f"https://api.xter.io/palio/v1/user/{self.account.address}/ticket"
+        response = self.session.get(url, headers=self.headers, timeout=10)
+        data = response.json()
+        log_and_print(f"{self.alias} get_ticket data:{data}")
+        return data
+
+    def get_recent(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0 or energy == 0:
+            return None
+        url = f"https://api.xter.io/market/v1/items/recent"
+        response = self.session.get(url, headers=self.headers, timeout=10)
+        data = response.json()
+        log_and_print(f"{self.alias} get_recent data:{data}")
+        return data
+
+
+    def get_unread(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0 or energy == 0:
+            return None
+        url = f"https://api.xter.io/message/v1/state/unread"
+        response = self.session.get(url, headers=self.headers, timeout=10)
+        data = response.json()
+        log_and_print(f"{self.alias} get_unread data:{data}")
+        return data
+
     def run(self,alias, account,proxyinfo):
         self.create_new_session(proxyinfo)
         self.alias = alias
@@ -203,13 +344,124 @@ class XterioGM:
             return False
 
         try:
+            response = self.get_unread()
+            response = self.get_ticket()
+            response = self.get_recent()
+            #这不校验结果
+        except Exception as e:
+            pass
+
+        try:
+            response = self.get_incubation()
+            need_claimUtility, claimed_but_not_proped = self.analyze_incubation(response)
+            log_and_print(f"{alias} incubation successfully ")
+            
+        except Exception as e:
+            log_and_print(f"{alias} get_incubation failed: {e}")
+            excel_manager.update_info(alias, f"get_incubation failed: {e}")
+            return False
+
+
+        for taskNum in need_claimUtility:
+            result = self.claimUtility(taskNum)
+            if result == False:
+                return False
+            claimed_but_not_proped.append(taskNum)
+
+        for taskNum in claimed_but_not_proped:
+            try:
+                response = self.post_prop(taskNum)
+                if response["err_code"] != 0:
+                    raise Exception(f" Error: {response}")
+            except Exception as e:
+                log_and_print(f"{alias} post_prop failed: {e}")
+                excel_manager.update_info(alias, f"post_prop failed: {e}")
+                return False
+
+        try:
+            task_ids = []
+            response = self.get_tasks()
+            if response["err_code"] != 0:
+                raise Exception(f"Error: {response}")
+            for task in response['data']['list']:
+                task_id = task['ID']
+                for user_task in task['user_task']:
+                    if user_task['status'] == 1:
+                        task_ids.append(task_id)  # 将满足条件的task_id添加到数组中
+            log_and_print(f"{alias} get_tasks successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_tasks failed: {e}")
+            excel_manager.update_info(alias, f"get_tasks failed: {e}")
+            return False
+
+
+        for taskNum in task_ids:
+            try:
+                response = self.post_task(taskNum)
+                if response["err_code"] != 0:
+                    raise Exception(f" Error: {response}")
+            except Exception as e:
+                log_and_print(f"{alias} post_prop failed: {e}")
+                excel_manager.update_info(alias, f"post_prop failed: {e}")
+                return False
+
+        try:
+            response = self.get_unread()
+            response = self.get_ticket()
+            response = self.get_recent()
+            #这不校验结果
+        except Exception as e:
+            pass
+
+        try:
             response = self.get_point()
-            log_and_print(f"{alias} get_point successfully ")
+            #这不校验结果
+        except Exception as e:
+            pass
+
+        try:
+            task_ids = []
+            response = self.get_tasks()
+            if response["err_code"] != 0:
+                raise Exception(f"Error: {response}")
+            for task in response['data']['list']:
+                task_id = task['ID']
+                for user_task in task['user_task']:
+                    if user_task['status'] == 1:
+                        task_ids.append(task_id)  # 将满足条件的task_id添加到数组中
+            log_and_print(f"{alias} get_tasks successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_tasks failed: {e}")
+            excel_manager.update_info(alias, f"get_tasks failed: {e}")
+            return False
+
+
+        for taskNum in task_ids:
+            try:
+                response = self.post_task(taskNum)
+                if response["err_code"] != 0:
+                    raise Exception(f" Error: {response}")
+            except Exception as e:
+                log_and_print(f"{alias} post_prop failed: {e}")
+                excel_manager.update_info(alias, f"post_prop failed: {e}")
+                return False
+
+        try:
+            response = self.get_point()
+            if response["err_code"] != 0:
+                raise Exception(f" Error: {response}")
+            boost_sum = sum(item['value'] + 1 for item in response['data']['boost'])
+            point_sum = sum(item['value'] for item in response['data']['point'])
+            rank = response['data']['rank']
+            log_and_print(f"{alias} boost_sum {boost_sum}  point_sum {point_sum} rank {rank} ")
+            excel_manager.update_info(alias, f"boost_sum {boost_sum}  point_sum {point_sum} rank {rank}")
         except Exception as e:
             log_and_print(f"{alias} get_point failed: {e}")
             excel_manager.update_info(alias, f"get_point failed: {e}")
             return False
 
+
+default_account_path = rf'\\192.168.3.142\SuperWind\Study\account_config\xterio_account.json'
 
 if __name__ == '__main__':
     proxyApp = socket5SwitchProxy(logger = log_and_print)
@@ -220,7 +472,7 @@ if __name__ == '__main__':
     client_key = UserInfoApp.find_yesCaptch_clientkey()
     app = XterioGM()
 
-    alais_list = UserInfoApp.find_alias_by_path()
+    alais_list = UserInfoApp.find_alias_by_path(config_file = default_account_path)
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)

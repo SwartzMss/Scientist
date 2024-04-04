@@ -249,8 +249,8 @@ if __name__ == "__main__":
         #app.run("JP06", 26,"emulator-5606")
         #smd 01 02 sbm sme
         #app.run("MSS", 2,"emulator-5558")
-        app.run("SME1102", 1,"emulator-5556")
+        #app.run("SME1102", 1,"emulator-5556")
         #app.run("SMD01", 6,"emulator-5566")
-        #app.run("SMD02", 7,"emulator-5568")
+        app.run("SMD02", 7,"emulator-5568")
         #app.run("SBM", 4,"emulator-5562")
         time.sleep(3)
