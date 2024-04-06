@@ -172,6 +172,38 @@ class XterioGM:
         log_and_print(f"encodeABI_claimUtility = {encoded_data_hex}")
         return encoded_data_hex
 
+
+    def encodeABI_claimUtility(self,characterIdx,amount,totalAmount,expireTime,_sig):
+        encoded_data = encode(
+            ["uint256","uint256","uint256","uint256","bytes"],
+            [characterIdx,amount,totalAmount,expireTime,_sig]
+        )
+        encoded_data_hex = encoded_data.hex()
+        log_and_print(f"encodeABI_claimUtility = {encoded_data_hex}")
+        return encoded_data_hex
+
+    def perform_vote(self,characterIdx,amount,totalAmount,expireTime,_sig):
+        log_and_print(f"{alias} perform_vote ")
+        __contract_addr = Web3.to_checksum_address("0x73e987FB9F0b1c10db7D57b913dAa7F2Dc12b4f5")
+        param = self.encodeABI_claimUtility(characterIdx,amount,totalAmount,expireTime,_sig)
+        MethodID="0x9beeaac8" 
+        try:
+            data = MethodID + param
+            gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
+            response = self.rpc.transfer(
+                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+            if 'error' in response:
+                raise Exception(f"action Error: {response}")
+            hasResult = response["result"]
+            txIsSucceed,msg = self.check_transaction_status(hasResult)
+            if  txIsSucceed != True:
+                raise Exception(f"check_transaction_status Error: {msg}")
+        except Exception as e:
+            log_and_print(f"{alias} perform_vote  failed: {e}")
+            excel_manager.update_info(alias, f" perform_vote failed: {e}")
+            return False
+
+
     def claimUtility(self,taskNum):
         log_and_print(f"{alias} claimUtility  taskNum {taskNum}")
         __contract_addr = Web3.to_checksum_address("0xBeEDBF1d1908174b4Fc4157aCb128dA4FFa80942")
@@ -264,6 +296,8 @@ class XterioGM:
                 need_claimUtility.append(prop['props_id'])
 
         # 返回结果
+        random.shuffle(need_claimUtility)
+        random.shuffle(claimed_but_not_proped)
         return need_claimUtility, claimed_but_not_proped
 
     def post_task(self,taskNum):
@@ -278,9 +312,6 @@ class XterioGM:
         return data
 
     def get_ticket(self):
-        run_or_not = random.randint(0, 1)  # 生成 0 或 1
-        if run_or_not == 0 or energy == 0:
-            return None
         url = f"https://api.xter.io/palio/v1/user/{self.account.address}/ticket"
         response = self.session.get(url, headers=self.headers, timeout=10)
         data = response.json()
@@ -297,6 +328,14 @@ class XterioGM:
         log_and_print(f"{self.alias} get_recent data:{data}")
         return data
 
+    def post_vote(self,taskNum):
+        url = f"https://api.xter.io/palio/v1/user/{self.account.address}/vote"
+        payload ={"index":0,"num":taskNum}
+        response = self.session.post(
+            url, headers=self.headers,data=payload, timeout=120)
+        data = response.json()
+        log_and_print(f"{self.alias} post_vote taskNum {taskNum} data:{data}")
+        return data
 
     def get_unread(self):
         run_or_not = random.randint(0, 1)  # 生成 0 或 1
@@ -308,10 +347,70 @@ class XterioGM:
         log_and_print(f"{self.alias} get_unread data:{data}")
         return data
 
+    def get_valid_task_ids(self,response):
+        task_ids = []  # 存储有效任务ID的列表
+        for task in response['data']['list']:
+            task_id = task['ID']
+            user_tasks_sorted = sorted(task['user_task'], key=lambda x: x['ID'])  # 按ID排序user_task数组
+
+            # 找到第一个状态为2的任务的ID
+            first_status_2_id = next((ut['ID'] for ut in user_tasks_sorted if ut['status'] == 2), None)
+
+            # 检查有效的任务
+            if first_status_2_id:
+                for user_task in user_tasks_sorted:
+                    if user_task['status'] == 1 and user_task['ID'] > first_status_2_id and task_id not in task_ids:
+                        task_ids.append(task_id)  # 添加有效的task_id到列表中
+                        break  # 找到有效任务后即停止当前任务的检查
+            else:
+                # 如果没有状态为2的任务，查找最后一个状态为1的任务
+                last_status_1_task = next((ut for ut in reversed(user_tasks_sorted) if ut['status'] == 1), None)
+                if last_status_1_task and task_id not in task_ids:
+                    task_ids.append(task_id)  # 添加有效的task_id到列表中
+
+        return task_ids
+
+
+    def get_voted_amount(self):
+        character_index = 0
+        user_address = self.account.address
+        contract_abi = [
+            {
+                "type": "function",
+                "name": "votedAmt",
+                "inputs": [
+                    {
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "name": "characterIdx",
+                        "type": "uint256"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view"
+            }
+        ]
+        contract_address = Web3.to_checksum_address("0x73e987FB9F0b1c10db7D57b913dAa7F2Dc12b4f5")
+        contract = self.web3.eth.contract(address=contract_address, abi=contract_abi)
+        try:
+            voted_amount = contract.functions.votedAmt(user_address, character_index).call()
+            return voted_amount
+        except Exception as e:
+            log_and_print(f"Error getting voted amount: {e}")
+            return None
+
     def run(self,alias, account,proxyinfo):
         self.create_new_session(proxyinfo)
         self.alias = alias
         self.account = account
+
         try:
             response= self.get_signMsg()
             if response["err_code"] != 0:
@@ -345,7 +444,6 @@ class XterioGM:
 
         try:
             response = self.get_unread()
-            response = self.get_ticket()
             response = self.get_recent()
             #这不校验结果
         except Exception as e:
@@ -383,11 +481,7 @@ class XterioGM:
             response = self.get_tasks()
             if response["err_code"] != 0:
                 raise Exception(f"Error: {response}")
-            for task in response['data']['list']:
-                task_id = task['ID']
-                for user_task in task['user_task']:
-                    if user_task['status'] == 1:
-                        task_ids.append(task_id)  # 将满足条件的task_id添加到数组中
+            task_ids = self.get_valid_task_ids(response)
             log_and_print(f"{alias} get_tasks successfully ")
         except Exception as e:
             log_and_print(f"{alias} get_tasks failed: {e}")
@@ -407,7 +501,6 @@ class XterioGM:
 
         try:
             response = self.get_unread()
-            response = self.get_ticket()
             response = self.get_recent()
             #这不校验结果
         except Exception as e:
@@ -424,11 +517,7 @@ class XterioGM:
             response = self.get_tasks()
             if response["err_code"] != 0:
                 raise Exception(f"Error: {response}")
-            for task in response['data']['list']:
-                task_id = task['ID']
-                for user_task in task['user_task']:
-                    if user_task['status'] == 1:
-                        task_ids.append(task_id)  # 将满足条件的task_id添加到数组中
+            task_ids = self.get_valid_task_ids(response)
             log_and_print(f"{alias} get_tasks successfully ")
         except Exception as e:
             log_and_print(f"{alias} get_tasks failed: {e}")
@@ -444,6 +533,35 @@ class XterioGM:
             except Exception as e:
                 log_and_print(f"{alias} post_prop failed: {e}")
                 excel_manager.update_info(alias, f"post_prop failed: {e}")
+                return False
+
+        try:
+            response = self.get_ticket()
+            if response["err_code"] != 0:
+                raise Exception(f" Error: {response}")
+            total_ticket = response['data']["total_ticket"]
+        except Exception as e:
+            log_and_print(f"{alias} get_ticket failed: {e}")
+            excel_manager.update_info(alias, f"get_ticket failed: {e}")
+            return False
+
+        try:
+            voted_amount = self.get_voted_amount()
+            NeedVotedTicket = total_ticket - voted_amount
+        except Exception as e:
+            log_and_print(f"{alias} get_voted_amount failed: {e}")
+            excel_manager.update_info(alias, f"get_voted_amount failed: {e}")
+            return False
+
+        if NeedVotedTicket >10:
+            try:
+                response = self.post_vote(NeedVotedTicket)
+                if response["err_code"] != 0:
+                    raise Exception(f" Error: {response}")
+                total_ticket = response['data']["total_ticket"]
+            except Exception as e:
+                log_and_print(f"{alias} get_ticket failed: {e}")
+                excel_manager.update_info(alias, f"get_ticket failed: {e}")
                 return False
 
         try:
@@ -476,6 +594,7 @@ if __name__ == '__main__':
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
+        key = "0xac4ba4832963ed6f060ff1ebf61d6d5a6c5d7fc2795d0544568bfd57b132b6b9"
         account = web3.Account.from_key(key)    
         proxyName = UserInfoApp.find_socket5proxy_by_alias_in_file(alias)
         if not proxyName:

@@ -219,8 +219,18 @@ class MintChainGM:
         log_and_print(f"{self.alias} post_claim data:{data}")
         return data
 
+    def post_openbox(self,taskid):
+        url = f"https://www.mintchain.io/api/tree/open-box"
+        payload = {
+            "boxId":taskid,
+        }
+        response = self.session.post(url, headers=self.headers, json=payload,timeout=10)
+        data = response.json()
+        log_and_print(f"{self.alias} post_openbox data:{data}")
+        return data
 
-    def get_open(self):
+
+    def get_open(self,energy):
         run_or_not = random.randint(0, 1)  # 生成 0 或 1
         if run_or_not == 0 or energy == 0:
             return None
@@ -282,12 +292,6 @@ class MintChainGM:
             log_and_print(f"{alias} get_energylist failed: {e}")
             excel_manager.update_info(alias, f"get_energylist failed: {e}")
             return False
-
-        try:
-            response = self.get_asset()
-            #这不校验结果
-        except Exception as e:
-            pass
 
         try:
             response = self.get_leaderboard()
@@ -368,12 +372,27 @@ class MintChainGM:
             return False
 
         try:
+            response = self.get_userinfo()
+            energy = response['result']['energy']
             response = self.get_tasklist()
             response = self.get_experiments()
-            response = self.get_open()
+            response = self.get_open(energy)
             #这不校验结果
         except Exception as e:
             pass
+
+
+        try:
+            response = self.get_asset()
+            # 检查是否存在 'result' 键且其值非空
+            if 'result' in response and response['result']:
+                taskId =  response['result'][0].get('id')  # 使用 get 方法来避免 KeyError
+                response = self.post_openbox(taskId)
+                if 10000 != response["code"]:
+                    raise Exception(f"Error: {response}")
+        except Exception as e:
+            log_and_print(f"{alias} post_openbox failed: {e}")
+            excel_manager.update_info(alias, f"post_openbox failed: {e}")
 
         try:
             response = self.get_userinfo()

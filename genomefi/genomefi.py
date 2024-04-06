@@ -445,17 +445,17 @@ class GenomefiGM:
             excel_manager.update_info(alias, f"frist get_status failed: {e}")
             return False
 
-        if isAttendanceToday == 0:
-            try:
-                response = self.post_attendance()
-                if response['success'] == True:
-                    log_and_print(f"{alias} post_attendance successfully ")
-                else:
-                    raise Exception(f"Error: {response}")
-            except Exception as e:
-                log_and_print(f"{alias} post_attendance failed: {e}")
-                excel_manager.update_info(alias, f"post_attendance failed: {e}")
-                return False
+        # if isAttendanceToday == 0:
+        #     try:
+        #         response = self.post_attendance()
+        #         if response['success'] == True:
+        #             log_and_print(f"{alias} post_attendance successfully ")
+        #         else:
+        #             raise Exception(f"Error: {response}")
+        #     except Exception as e:
+        #         log_and_print(f"{alias} post_attendance failed: {e}")
+        #         excel_manager.update_info(alias, f"post_attendance failed: {e}")
+        #         return False
 
         try:
             response = self.get_profile()
