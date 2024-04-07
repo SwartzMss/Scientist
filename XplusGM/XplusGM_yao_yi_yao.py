@@ -244,8 +244,8 @@ if __name__ == "__main__":
         log_and_print(f"################: {i}次启动")
         #app.run("swartz", 30,"emulator-5614")
         #app.run("JP07", 27,"emulator-5608")
-        #app.run("JP08", 28,"emulator-5610")
-        app.run("JP09", 29,"emulator-5612")
+        app.run("JP08", 28,"emulator-5610")
+        #app.run("JP09", 29,"emulator-5612")
         #app.run("JP06", 26,"emulator-5606")
         #smd 01 02 sbm sme
         #app.run("MSS", 2,"emulator-5558")
