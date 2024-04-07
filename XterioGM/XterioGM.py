@@ -144,6 +144,7 @@ class XterioGM:
         attempts = 0  # 初始化尝试次数计数器
 
         while attempts < max_attempts:  # 循环直到达到最大尝试次数
+            time.sleep(interval)  # 等待一段时间再次检查
             try:
                 receipt = self.web3.eth.get_transaction_receipt(tx_hash)                
                 if receipt is not None:
@@ -154,7 +155,6 @@ class XterioGM:
             except Exception as e:
                 log_and_print(f"Error checking transaction status: {e}")
             
-            time.sleep(interval)  # 等待一段时间再次检查
             attempts += 1  # 更新尝试次数
 
         # 超时后返回False，表示交易状态未知或未确认，状态为挂起
@@ -208,9 +208,32 @@ class XterioGM:
             excel_manager.update_info(alias, f" perform_vote failed: {e}")
             return False
 
+    def claimNFT(self):
+        log_and_print(f"{alias} claimNFT")
+        __contract_addr = Web3.to_checksum_address("0xBeEDBF1d1908174b4Fc4157aCb128dA4FFa80942")
+        MethodID="0x8cb68a65" 
+        try:
+            data = MethodID
+            gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
+            response = self.rpc.transfer(
+                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+            if 'error' in response:
+                raise Exception(f"action Error: {response}")
+            hasResult = response["result"]
+            txIsSucceed,msg = self.check_transaction_status(hasResult)
+            if  txIsSucceed != True:
+                raise Exception(f"check_transaction_status Error: {msg}")
+            time.sleep(3)
+            response = self.post_triggert(hasResult)
+            if response["err_code"] != 0:
+                raise Exception(f"post_triggert Error: {response}")
+            time.sleep(3)
+        except Exception as e:
+            log_and_print(f"{alias} claimNFT  failed: {e}")
+            excel_manager.update_info(alias, f" claimNFT failed: {e}")
+            return False
 
     def claimUtility(self,taskNum):
-        time.sleep(2)
         log_and_print(f"{alias} claimUtility  taskNum {taskNum}")
         __contract_addr = Web3.to_checksum_address("0xBeEDBF1d1908174b4Fc4157aCb128dA4FFa80942")
         param = self.encodeABI_claimUtility(taskNum)
@@ -226,9 +249,11 @@ class XterioGM:
             txIsSucceed,msg = self.check_transaction_status(hasResult)
             if  txIsSucceed != True:
                 raise Exception(f"check_transaction_status Error: {msg}")
+            time.sleep(3)
             response = self.post_triggert(hasResult)
             if response["err_code"] != 0:
                 raise Exception(f"post_triggert Error: {response}")
+            time.sleep(3)
         except Exception as e:
             log_and_print(f"{alias} claimUtility  failed: {e}")
             excel_manager.update_info(alias, f" claimUtility failed: {e}")
@@ -320,15 +345,6 @@ class XterioGM:
         log_and_print(f"{self.alias} post_task taskNum {taskNum} data:{data}")
         return data
 
-    def get_ethBalance(self):
-        url = f"https://nd-723-682-216.p2pify.com/fb589a7b832e8fcdd82309f6fdb5dad1"
-        payload = {"method":"eth_getBalance","params":[self.account.address,"latest"],"id":61,"jsonrpc":"2.0"}
-        response = self.session.get(url, headers=self.headers, timeout=10)
-        data = response.json()
-        log_and_print(f"{self.alias} get_ticket data:{data}")
-        return data
-
-
     def get_ticket(self):
         url = f"https://api.xter.io/palio/v1/user/{self.account.address}/ticket"
         response = self.session.get(url, headers=self.headers, timeout=10)
@@ -341,15 +357,6 @@ class XterioGM:
         response = self.session.get(url, headers=self.headers, timeout=10)
         data = response.json()
         log_and_print(f"{self.alias} get_chat data:{data}")
-        return data
-
-    def post_chat(self,msg):
-        url = f"https://3656kxpioifv7aumlcwe6zcqaa0eeiab.lambda-url.eu-central-1.on.aws/?address={self.account.address}"
-        payload ={"answer":msg}
-        response = self.session.post(
-            url, headers=self.headers,json=payload, timeout=120)
-        data = response.json()
-        log_and_print(f"{self.alias} post_chat data:{data}")
         return data
 
     def get_recent(self):
@@ -385,9 +392,7 @@ class XterioGM:
         url = f"https://3656kxpioifv7aumlcwe6zcqaa0eeiab.lambda-url.eu-central-1.on.aws/?address={self.account.address}"
         payload ={"answer":msg}
         response = self.session.post(url, headers=self.headers,json=payload, timeout=10)
-        data = response.json()
-        log_and_print(f"{self.alias} post_chat data:{data}")
-        return data
+        return response
 
     def get_valid_task_ids(self,response):
         task_ids = []  # 存储有效任务ID的列表
@@ -477,7 +482,7 @@ class XterioGM:
             if response["err_code"] != 0:
                 raise Exception(f"Error: {response}")
             token = response['data']["id_token"]
-            self.headers['authorization'] = 'Bearer ' + token
+            self.headers['authorization'] = token
             log_and_print(f"{alias} post_wallet successfully ")
         except Exception as e:
             log_and_print(f"{alias} post_wallet failed: {e}")
@@ -513,6 +518,10 @@ class XterioGM:
             except Exception as e:
                 log_and_print(f"{alias} post_chat failed: {e}")
                 excel_manager.update_info(alias, f"post_chat failed: {e}")
+                return False
+
+            result = self.claimNFT()
+            if result == False:
                 return False
 
         try:
@@ -661,8 +670,12 @@ class XterioGM:
             response = self.get_point()
             if response["err_code"] != 0:
                 raise Exception(f" Error: {response}")
-            boost_sum = sum(item['value'] + 1 for item in response['data']['boost'])
-            point_sum = sum(item['value'] for item in response['data']['point'])
+            if response['data']['boost'] is None:
+                boost_sum = 1
+                point_sum = None
+            else:
+                boost_sum = sum(item['value'] + 1 for item in response['data']['boost'])
+                point_sum = sum(item['value'] for item in response['data']['point'])
             rank = response['data']['rank']
             log_and_print(f"{alias} boost_sum {boost_sum}  point_sum {point_sum} rank {rank} is_answer_null {is_answer_null}")
             excel_manager.update_info(alias, f"boost_sum {boost_sum}  point_sum {point_sum} rank {rank} is_answer_null {is_answer_null}")
@@ -687,6 +700,7 @@ if __name__ == '__main__':
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
+        key = "0xdf1aa39088e8b1adab73b1cfa4e55f24a005e827670f97f13db6c29cff2db1a2"
         account = web3.Account.from_key(key)    
         proxyName = UserInfoApp.find_socket5proxy_by_alias_in_file(alias)
         if not proxyName:
