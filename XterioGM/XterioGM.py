@@ -480,7 +480,7 @@ class XterioGM:
         if is_answer_null == True:
             try:
                 msg = self.QuestionPickerApp.get_random_question()
-                if msg = None:
+                if msg == None:
                     raise Exception(f"Error: question has been used done")
                 response = self.post_chat(msg)
                 time.sleep(3)
