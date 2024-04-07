@@ -381,14 +381,6 @@ class XterioGM:
         log_and_print(f"{self.alias} get_unread data:{data}")
         return data
 
-    def get_chat(self,msg):
-        url = f"https://api.xter.io/palio/v1/user/{self.account.address}/chat"
-        response = self.session.get(url, headers=self.headers, timeout=10)
-        data = response.json()
-        log_and_print(f"{self.alias} get_chat data:{data}")
-        return data
-
-
     def post_chat(self, msg):
         url = f"https://3656kxpioifv7aumlcwe6zcqaa0eeiab.lambda-url.eu-central-1.on.aws/?address={self.account.address}"
         payload ={"answer":msg}
