@@ -56,7 +56,7 @@ class QuestionPicker:
 
     def get_random_question(self):
         if not self.questions:
-            return "No questions available."
+            return None
 
         question = random.choice(self.questions)
         self.questions.remove(question)
@@ -480,6 +480,8 @@ class XterioGM:
         if is_answer_null == True:
             try:
                 msg = self.QuestionPickerApp.get_random_question()
+                if msg = None:
+                    raise Exception(f"Error: question has been used done")
                 response = self.post_chat(msg)
                 time.sleep(3)
                 log_and_print(f"{alias} post_chat successfully ")
