@@ -45,10 +45,9 @@ def log_and_print(text):
         log_file.write(message + '\n')
 
 class QuestionPicker:
-    def __init__(self, filename = rf'E:\HardCode\web3\Scientist\XterioGM\Question.txt'):
+    def __init__(self, filename=rf'E:\HardCode\web3\Scientist\XterioGM\Question.txt'):
         self.filename = filename
         self.questions = []
-        self.used_questions = set()
         self.load_questions()
 
     def load_questions(self):
@@ -56,18 +55,21 @@ class QuestionPicker:
             self.questions = [line.strip() for line in file.readlines() if line.strip()]
 
     def get_random_question(self):
-        available_questions = list(set(self.questions) - self.used_questions)
+        if not self.questions:
+            return "No questions available."
 
-        if not available_questions:
-            self.used_questions.clear()
-            available_questions = self.questions.copy()
-
-        question = random.choice(available_questions)
-        self.used_questions.add(question)
+        question = random.choice(self.questions)
+        self.questions.remove(question)
+        self.update_file()
         return question
+
+    def update_file(self):
+        with open(self.filename, 'w') as file:
+            file.writelines([question + '\n' for question in self.questions])
 
 class XterioGM:
     def __init__(self, rpc_url="https://xterio.alt.technology", chain_id=112358):
+        self.QuestionPickerApp = QuestionPicker()
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.alias = None
@@ -347,6 +349,22 @@ class XterioGM:
         log_and_print(f"{self.alias} get_unread data:{data}")
         return data
 
+    def get_chat(self,msg):
+        url = f"https://api.xter.io/palio/v1/user/{self.account.address}/chat"
+        response = self.session.get(url, headers=self.headers, timeout=10)
+        data = response.json()
+        log_and_print(f"{self.alias} get_chat data:{data}")
+        return data
+
+
+    def post_chat(self, msg):
+        url = f"https://3656kxpioifv7aumlcwe6zcqaa0eeiab.lambda-url.eu-central-1.on.aws/?address={self.account.address}"
+        payload ={"answer":msg}
+        response = self.session.post(url, headers=self.headers,json=payload, timeout=10)
+        data = response.json()
+        log_and_print(f"{self.alias} post_chat data:{data}")
+        return data
+
     def get_valid_task_ids(self,response):
         task_ids = []  # 存储有效任务ID的列表
         for task in response['data']['list']:
@@ -450,6 +468,28 @@ class XterioGM:
             pass
 
         try:
+            response = self.get_chat()
+            is_answer_null = response['data']['answer']['answer'] is None
+            log_and_print(f"{alias} get_chat successfully ")
+            
+        except Exception as e:
+            log_and_print(f"{alias} get_chat failed: {e}")
+            excel_manager.update_info(alias, f"get_chat failed: {e}")
+            return False
+    
+        if is_answer_null == True:
+            try:
+                msg = self.QuestionPickerApp.get_random_question()
+                response = self.post_chat(msg)
+                time.sleep(3)
+                log_and_print(f"{alias} post_chat successfully ")
+                
+            except Exception as e:
+                log_and_print(f"{alias} post_chat failed: {e}")
+                excel_manager.update_info(alias, f"post_chat failed: {e}")
+                return False
+
+        try:
             response = self.get_incubation()
             need_claimUtility, claimed_but_not_proped = self.analyze_incubation(response)
             log_and_print(f"{alias} incubation successfully ")
@@ -459,6 +499,15 @@ class XterioGM:
             excel_manager.update_info(alias, f"get_incubation failed: {e}")
             return False
 
+        try:
+            response = self.get_chat()
+            is_answer_null = response['data']['answer']['answer'] is None
+            log_and_print(f"{alias} get_chat successfully ")
+            
+        except Exception as e:
+            log_and_print(f"{alias} get_chat failed: {e}")
+            excel_manager.update_info(alias, f"get_chat failed: {e}")
+            return False
 
         for taskNum in need_claimUtility:
             result = self.claimUtility(taskNum)
@@ -571,8 +620,8 @@ class XterioGM:
             boost_sum = sum(item['value'] + 1 for item in response['data']['boost'])
             point_sum = sum(item['value'] for item in response['data']['point'])
             rank = response['data']['rank']
-            log_and_print(f"{alias} boost_sum {boost_sum}  point_sum {point_sum} rank {rank} ")
-            excel_manager.update_info(alias, f"boost_sum {boost_sum}  point_sum {point_sum} rank {rank}")
+            log_and_print(f"{alias} boost_sum {boost_sum}  point_sum {point_sum} rank {rank} is_answer_null {is_answer_null}")
+            excel_manager.update_info(alias, f"boost_sum {boost_sum}  point_sum {point_sum} rank {rank} is_answer_null {is_answer_null}")
         except Exception as e:
             log_and_print(f"{alias} get_point failed: {e}")
             excel_manager.update_info(alias, f"get_point failed: {e}")
