@@ -220,12 +220,13 @@ class XterioGM:
             if 'error' in response:
                 raise Exception(f"action Error: {response}")
             hasResult = response["result"]
+            log_and_print(f"{alias} claimNFT  hasResult: {hasResult}")
             txIsSucceed,msg = self.check_transaction_status(hasResult)
             if  txIsSucceed != True:
                 raise Exception(f"check_transaction_status Error: {msg}")
             time.sleep(3)
-            response = self.post_triggert(hasResult)
-            if response["err_code"] != 0:
+            result = self.post_triggert(hasResult)
+            if result == False:
                 raise Exception(f"post_triggert Error: {response}")
             time.sleep(3)
         except Exception as e:
@@ -246,32 +247,48 @@ class XterioGM:
             if 'error' in response:
                 raise Exception(f"action Error: {response}")
             hasResult = response["result"]
+            log_and_print(f"{alias} claimUtility  hasResult: {hasResult}")
             txIsSucceed,msg = self.check_transaction_status(hasResult)
             if  txIsSucceed != True:
                 raise Exception(f"check_transaction_status Error: {msg}")
             time.sleep(3)
-            response = self.post_triggert(hasResult)
-            if response["err_code"] != 0:
-                raise Exception(f"post_triggert Error: {response}")
+            result = self.post_triggert(hasResult)
+            if result == False:
+                raise Exception(f"post_triggert failed")
             time.sleep(3)
         except Exception as e:
             log_and_print(f"{alias} claimUtility  failed: {e}")
             excel_manager.update_info(alias, f" claimUtility failed: {e}")
             return False
 
-    def post_triggert(self,txHash):
-        url = f"https://api.xter.io/baas/v1/event/trigger"
-
+    def post_triggert(self, txHash):
+        url = "https://api.xter.io/baas/v1/event/trigger"
         payload = {
-                "eventType":"PalioIncubator::*",
-                "network":"XTERIO",
-                "txHash":txHash,
+            "eventType": "PalioIncubator::*",
+            "network": "XTERIO",
+            "txHash": txHash,
         }
-        response = self.session.post(
-            url, headers=self.headers,json=payload, timeout=120)
-        data = response.json()
-        log_and_print(f"{self.alias} post_triggert data:{data}")
-        return data
+
+        max_retries = 6  # 设置最大重试次数
+        retry_count = 0
+
+        while retry_count < max_retries:
+            response = self.session.post(
+                url, headers=self.headers, json=payload, timeout=120)
+            data = response.json()
+            log_and_print(f"{self.alias} post_triggert data: {data}")
+
+            if data["err_code"] == 0 and data["data"]["invokeCnt"] > 0:
+                return True  # 成功，返回True
+
+            if data["err_code"] != 0 or data["data"]["invokeCnt"] == 0:
+                log_and_print(f"{self.alias} post_triggert attempt {retry_count + 1} failed: {data}")
+                retry_count += 1
+                time.sleep(10)  # 等待一段时间后重试
+                continue
+
+        log_and_print(f"{self.alias} post_triggert failed after {max_retries} attempts")
+        return False  # 超过最大重试次数或未成功，返回False
 
 
 
@@ -310,29 +327,19 @@ class XterioGM:
         # 获取当前日期，用于比较（此处需根据实际情况调整）
         current_date = datetime.utcnow().date()
 
-        # 分类存储props_id
-        need_claimUtility = []
         claimed_but_not_proped = []
 
-        if not props:
-            need_claimUtility.extend([1, 2, 3])
-        else:
-            for prop in props:
-                # 提取并转换UpdatedAt日期
-                updated_at = datetime.strptime(prop['UpdatedAt'].split('T')[0], "%Y-%m-%d").date()
-                
-                # 检查是否需要claimUtility或prop
-                if prop['total'] > prop['cons_total']:
-                    # claimUtility已执行但prop未执行
-                    claimed_but_not_proped.append(prop['props_id'])
-                elif prop['total'] == prop['cons_total'] and updated_at < current_date:
-                    # 需要执行claimUtility
-                    need_claimUtility.append(prop['props_id'])
+        for prop in props:
+            # 提取并转换UpdatedAt日期
+            updated_at = datetime.strptime(prop['UpdatedAt'].split('T')[0], "%Y-%m-%d").date()
+            
+            # 检查是否需要claimUtility或prop
+            if prop['total'] > prop['cons_total']:
+                # claimUtility已执行但prop未执行
+                claimed_but_not_proped.append(prop['props_id'])
 
-        # 返回结果
-        random.shuffle(need_claimUtility)
         random.shuffle(claimed_but_not_proped)
-        return need_claimUtility, claimed_but_not_proped
+        return claimed_but_not_proped
 
     def post_task(self,taskNum):
         url = f"https://api.xter.io/palio/v1/user/{self.account.address}/task"
@@ -417,6 +424,39 @@ class XterioGM:
 
         return task_ids
 
+    def check_if_claimed(self,taskId):
+        user_address = self.account.address
+        contract_abi = [
+            {
+                "type": "function",
+                "name": "claimedUtilitiesToday",
+                "inputs": [
+                    {
+                        "name": "user",
+                        "type": "address"
+                    },
+                    {
+                        "name": "utilityType",
+                        "type": "uint8"
+                    }
+                ],
+                "outputs": [
+                    {
+                        "name": "",
+                        "type": "uint256"
+                    }
+                ],
+                "stateMutability": "view"
+            }
+        ]
+        contract_address = Web3.to_checksum_address("0xBeEDBF1d1908174b4Fc4157aCb128dA4FFa80942")
+        contract = self.web3.eth.contract(address=contract_address, abi=contract_abi)
+        try:
+            isclaimed = contract.functions.claimedUtilitiesToday(user_address, taskId).call()
+            return isclaimed
+        except Exception as e:
+            log_and_print(f"Error check_if_claimed: {e}")
+            return None
 
     def get_voted_amount(self):
         character_index = 0
@@ -526,39 +566,13 @@ class XterioGM:
 
         try:
             response = self.get_incubation()
-            need_claimUtility, claimed_but_not_proped = self.analyze_incubation(response)
+            claimed_but_not_proped = self.analyze_incubation(response)
             log_and_print(f"{alias} incubation successfully ")
             
         except Exception as e:
             log_and_print(f"{alias} get_incubation failed: {e}")
             excel_manager.update_info(alias, f"get_incubation failed: {e}")
             return False
-
-        try:
-            response = self.get_chat()
-            is_answer_null = response['data']['answer']['answer'] is None
-            log_and_print(f"{alias} get_chat successfully ")
-            
-        except Exception as e:
-            log_and_print(f"{alias} get_chat failed: {e}")
-            excel_manager.update_info(alias, f"get_chat failed: {e}")
-            return False
-
-        for taskNum in need_claimUtility:
-            result = self.claimUtility(taskNum)
-            if result == False:
-                return False
-            claimed_but_not_proped.append(taskNum)
-
-        time.sleep(3)
-        try:
-            response = self.get_unread()
-            response = self.get_recent()
-            response = self.get_point()
-            response = self.get_incubation()
-            #这不校验结果
-        except Exception as e:
-            pass
 
         for taskNum in claimed_but_not_proped:
             try:
@@ -571,6 +585,54 @@ class XterioGM:
                 excel_manager.update_info(alias, f"post_prop failed: {e}")
                 return False
 
+        claimed_but_not_proped = []
+        try:
+            response = self.get_chat()
+            is_answer_null = response['data']['answer']['answer'] is None
+            log_and_print(f"{alias} get_chat successfully ")
+            
+        except Exception as e:
+            log_and_print(f"{alias} get_chat failed: {e}")
+            excel_manager.update_info(alias, f"get_chat failed: {e}")
+            return False
+
+        for taskNum in [1, 2, 3]:
+            result = self.check_if_claimed(taskNum)
+            if result == 0:
+                result = self.claimUtility(taskNum)
+                if result == False:
+                    return False
+                claimed_but_not_proped.append(taskNum)
+
+        time.sleep(3)
+        try:
+            response = self.get_unread()
+            response = self.get_recent()
+            response = self.get_point()
+            response = self.get_incubation()
+            #这不校验结果
+        except Exception as e:
+            pass
+
+        for taskNum in claimed_but_not_proped:
+            retry_count = 0
+            max_retries = 5  # 可以根据需要设置最大重试次数
+            while retry_count < max_retries:
+                try:
+                    time.sleep(5)
+                    response = self.post_prop(taskNum)
+                    if response["err_code"] != 0:
+                        raise Exception(f"Error: {response}")
+                    break  # 如果成功，则退出循环
+                except Exception as e:
+                    log_and_print(f"{alias} post_prop attempt taskNum {taskNum} {retry_count + 1} failed: {e}")
+                    retry_count += 1
+
+            if retry_count == max_retries:
+                log_and_print(f"{alias} post_prop {taskNum} failed after {max_retries} attempts")
+                excel_manager.update_info(alias, f"post_prop {taskNum} failed after maximum retries")
+                return False
+
         try:
             task_ids = []
             response = self.get_tasks()
@@ -590,8 +652,8 @@ class XterioGM:
                 if response["err_code"] != 0:
                     raise Exception(f" Error: {response}")
             except Exception as e:
-                log_and_print(f"{alias} post_prop failed: {e}")
-                excel_manager.update_info(alias, f"post_prop failed: {e}")
+                log_and_print(f"{alias} post_task failed: {e}")
+                excel_manager.update_info(alias, f"post_task failed: {e}")
                 return False
 
         try:
@@ -626,8 +688,8 @@ class XterioGM:
                 if response["err_code"] != 0:
                     raise Exception(f" Error: {response}")
             except Exception as e:
-                log_and_print(f"{alias} post_prop failed: {e}")
-                excel_manager.update_info(alias, f"post_prop failed: {e}")
+                log_and_print(f"{alias} post_task failed: {e}")
+                excel_manager.update_info(alias, f"post_task failed: {e}")
                 return False
 
         try:
@@ -648,7 +710,7 @@ class XterioGM:
             excel_manager.update_info(alias, f"get_voted_amount failed: {e}")
             return False
 
-        if NeedVotedTicket >10:
+        if NeedVotedTicket >25:
             try:
                 response = self.post_vote(NeedVotedTicket)
                 if response["err_code"] != 0:
@@ -685,7 +747,6 @@ class XterioGM:
             return False
 
 
-default_account_path = rf'\\192.168.3.142\SuperWind\Study\account_config\xterio_account.json'
 
 if __name__ == '__main__':
     proxyApp = socket5SwitchProxy(logger = log_and_print)
@@ -696,11 +757,10 @@ if __name__ == '__main__':
     client_key = UserInfoApp.find_yesCaptch_clientkey()
     app = XterioGM()
 
-    alais_list = UserInfoApp.find_alias_by_path(config_file = default_account_path)
+    alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
-        key = "0xdf1aa39088e8b1adab73b1cfa4e55f24a005e827670f97f13db6c29cff2db1a2"
         account = web3.Account.from_key(key)    
         proxyName = UserInfoApp.find_socket5proxy_by_alias_in_file(alias)
         if not proxyName:
