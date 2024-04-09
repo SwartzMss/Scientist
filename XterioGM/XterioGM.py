@@ -497,6 +497,7 @@ class XterioGM:
         self.create_new_session(proxyinfo)
         self.alias = alias
         self.account = account
+        isAnyTaskDone = False
 
         try:
             response= self.get_signMsg()
@@ -651,6 +652,7 @@ class XterioGM:
                 response = self.post_task(taskNum)
                 if response["err_code"] != 0:
                     raise Exception(f" Error: {response}")
+                isAnyTaskDone = True
             except Exception as e:
                 log_and_print(f"{alias} post_task failed: {e}")
                 excel_manager.update_info(alias, f"post_task failed: {e}")
@@ -687,6 +689,7 @@ class XterioGM:
                 response = self.post_task(taskNum)
                 if response["err_code"] != 0:
                     raise Exception(f" Error: {response}")
+                isAnyTaskDone = True
             except Exception as e:
                 log_and_print(f"{alias} post_task failed: {e}")
                 excel_manager.update_info(alias, f"post_task failed: {e}")
@@ -739,8 +742,8 @@ class XterioGM:
                 boost_sum = sum(item['value'] + 1 for item in response['data']['boost'])
                 point_sum = sum(item['value'] for item in response['data']['point'])
             rank = response['data']['rank']
-            log_and_print(f"{alias} boost_sum {boost_sum}  point_sum {point_sum} rank {rank} is_answer_null {is_answer_null}")
-            excel_manager.update_info(alias, f"boost_sum {boost_sum}  point_sum {point_sum} rank {rank} is_answer_null {is_answer_null}")
+            log_and_print(f"{alias} boost_sum {boost_sum}  point_sum {point_sum} rank {rank} is_answer_null {is_answer_null} isAnyTaskDone {isAnyTaskDone}")
+            excel_manager.update_info(alias, f"boost_sum {boost_sum}  point_sum {point_sum} rank {rank} is_answer_null {is_answer_null} isAnyTaskDone {isAnyTaskDone}")
         except Exception as e:
             log_and_print(f"{alias} get_point failed: {e}")
             excel_manager.update_info(alias, f"get_point failed: {e}")
