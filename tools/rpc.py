@@ -136,24 +136,39 @@ class Rpc:
             # 处理错误，例如重试或返回默认值
             return None
 
-    def transfer(self, account, to, amount, gaslimit, gasprice=None,**kw):
+    def transfer(self, account, to, amount, gaslimit, gasprice=None, max_retries=3, **kw):
         """离线交易
-        prvikey: 私钥
+        参数：
+        account: 发送方账户
         to: 收款地址
-        gaslimit: 由当前区块的gaslimit获取
-        gasprice: get_gas_price获取 价格
-        nonce: 交易总数 get_transaction_count_by_address获取
-        chainId: 链id
+        amount: 发送金额
+        gaslimit: 交易的gas限制
+        gasprice: gas价格，如果没有提供，则通过get_gas_price获取
+        **kw: 其他交易参数
         """
+        # 转换输入参数的格式
         amount = int(amount, 16) if isinstance(amount, str) else int(amount)
         gaslimit = int(gaslimit, 16) if not isinstance(gaslimit, int) else gaslimit
-        if gasprice is None:
-            gasprice = int(self.get_gas_price()['result'], 16)
-        else:
-            gasprice = int(gasprice, 16) if isinstance(gasprice, str) else int(gasprice)
-        nonce = int(self.get_transaction_count_by_address(account.address)['result'], 16)
-        tx = {'from': account.address, 'value': amount,'to': to, 'gas': gaslimit, 'gasPrice': gasprice, 'nonce': nonce, 'chainId': self.chainid}
-        if kw:
-            tx.update(**kw)
-        signed = account.signTransaction(tx)
-        return self.send_raw_transaction(signed.rawTransaction.hex())
+        gasprice = int(gasprice, 16) if isinstance(gasprice, str) else int(gasprice) if gasprice is not None else int(self.get_gas_price()['result'], 16)
+
+        # 尝试发送交易，最多重试max_retries次
+        for attempt in range(max_retries):
+            nonce = int(self.get_transaction_count_by_address(account.address)['result'], 16)
+            tx = {'from': account.address, 'value': amount, 'to': to, 'gas': gaslimit, 'gasPrice': gasprice, 'nonce': nonce, 'chainId': self.chainid}
+            if kw:
+                tx.update(kw)
+            
+            signed = account.signTransaction(tx)
+            response = self.send_raw_transaction(signed.rawTransaction.hex())
+
+            if response and 'error' not in response:
+                return response  # 交易成功发送
+            elif response and 'error' in response and 'nonce too low' in response['error'].get('message', ''):
+                print(f"Attempt {attempt+1} failed, nonce too low. Retrying...")
+                continue  # 如果因为nonce过低而失败，则重试
+            else:
+                break  # 如果因为其他原因失败，则不再重试
+
+        # 所有尝试后仍未成功发送交易
+        print("Failed to send transaction after retries.")
+        return None
