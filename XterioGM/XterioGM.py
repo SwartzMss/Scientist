@@ -617,7 +617,7 @@ class XterioGM:
 
         for taskNum in claimed_but_not_proped:
             retry_count = 0
-            max_retries = 5  # 可以根据需要设置最大重试次数
+            max_retries = 12  # 可以根据需要设置最大重试次数
             while retry_count < max_retries:
                 try:
                     time.sleep(5)
