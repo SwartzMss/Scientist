@@ -151,13 +151,15 @@ class Rpc:
         gaslimit = int(gaslimit, 16) if not isinstance(gaslimit, int) else gaslimit
         gasprice = int(gasprice, 16) if isinstance(gasprice, str) else int(gasprice) if gasprice is not None else int(self.get_gas_price()['result'], 16)
 
+        last_response = None  # 初始化最后一次响应变量
+
         # 尝试发送交易，最多重试max_retries次
         for attempt in range(max_retries):
             nonce = int(self.get_transaction_count_by_address(account.address)['result'], 16)
             tx = {'from': account.address, 'value': amount, 'to': to, 'gas': gaslimit, 'gasPrice': gasprice, 'nonce': nonce, 'chainId': self.chainid}
             if kw:
                 tx.update(kw)
-            
+
             signed = account.signTransaction(tx)
             response = self.send_raw_transaction(signed.rawTransaction.hex())
 
@@ -165,10 +167,13 @@ class Rpc:
                 return response  # 交易成功发送
             elif response and 'error' in response and 'nonce too low' in response['error'].get('message', ''):
                 print(f"Attempt {attempt+1} failed, nonce too low. Retrying...")
+                last_response = response  # 更新最后一次响应
                 continue  # 如果因为nonce过低而失败，则重试
             else:
+                last_response = response  # 更新最后一次响应
                 break  # 如果因为其他原因失败，则不再重试
 
-        # 所有尝试后仍未成功发送交易
+        # 所有尝试后仍未成功发送交易，返回最后一次失败的response
         print("Failed to send transaction after retries.")
-        return None
+        return last_response
+
