@@ -187,9 +187,9 @@ class MorphSwapGM:
             log_and_print(f"{alias} gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, value, self.gaslimit, gasprice, data=data)
+            log_and_print(f"{alias} response = {response}")
             if 'error' in response:
                 raise Exception(f"Error: {response}")
-            log_and_print(f"{alias} response = {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} swap_bera_to_stgusdc.transfer successfully hash = {hasResult}")
             self.QueueForSwapFromEthtoMorph.append((alias, hasResult))
@@ -224,9 +224,9 @@ class MorphSwapGM:
             log_and_print(f"{alias} gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+            log_and_print(f"{alias} response = {response}")
             if 'error' in response:
                 raise Exception(f"Error: {response}")
-            log_and_print(f"{alias} response = {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} approve_action successfully hash = {hasResult}")
             self.QueueForApprovalResult.append((alias, private_key, hasResult, amount))
@@ -254,9 +254,9 @@ class MorphSwapGM:
             log_and_print(f"{alias} gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+            log_and_print(f"{alias} response = {response}")
             if 'error' in response:
                 raise Exception(f"Error: {response}")
-            log_and_print(f"{alias} response = {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} swap_usdt_to_morph transfer successfully hash = {hasResult}")
             self.QueueForSwapFromUSDTtoMorphResult.append((alias, hasResult))
