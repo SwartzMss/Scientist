@@ -184,10 +184,12 @@ class MorphSwapGM:
         value = int(amount * BALANCE_PRECISION)  # 计算要发送的amount
         try:
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
+            log_and_print(f"{alias} gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, value, self.gaslimit, gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"Error: {response}")
+            log_and_print(f"{alias} response = {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} swap_bera_to_stgusdc.transfer successfully hash = {hasResult}")
             self.QueueForSwapFromEthtoMorph.append((alias, hasResult))
@@ -219,10 +221,12 @@ class MorphSwapGM:
         try:
             data = MethodID + param
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
+            log_and_print(f"{alias} gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"Error: {response}")
+            log_and_print(f"{alias} response = {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} approve_action successfully hash = {hasResult}")
             self.QueueForApprovalResult.append((alias, private_key, hasResult, amount))
@@ -247,10 +251,12 @@ class MorphSwapGM:
         BALANCE_PRECISION = math.pow(10, 18)  # 主币精度，18位
         try:
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
+            log_and_print(f"{alias} gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"Error: {response}")
+            log_and_print(f"{alias} response = {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} swap_usdt_to_morph transfer successfully hash = {hasResult}")
             self.QueueForSwapFromUSDTtoMorphResult.append((alias, hasResult))
