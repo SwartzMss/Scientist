@@ -165,16 +165,28 @@ class Rpc:
 
             if response and 'error' not in response:
                 return response  # 交易成功发送
-            elif response and 'error' in response and 'nonce too low' in response['error'].get('message', ''):
-                print(f"Attempt {attempt+1} failed, nonce too low. Retrying...")
-                last_response = response  # 更新最后一次响应
-                time.sleep(2)
-                continue  # 如果因为nonce过低而失败，则重试
+            elif response and 'error' in response:
+                error_message = response['error'].get('message', '')
+                if 'nonce too low' in error_message:
+                    print(f"Attempt {attempt+1} failed, nonce too low. Retrying...")
+                    last_response = response  # 更新最后一次响应
+                    time.sleep(2)
+                    continue  # 如果因为nonce过低而失败，则重试
+                elif 'transaction underpriced' in error_message:
+                    print(f"Attempt {attempt+1} failed, transaction underpriced. Increasing gas price by 10% and retrying...")
+                    gasprice = int(gasprice * 1.1)  # 增加10%的gas价格
+                    last_response = response  # 更新最后一次响应
+                    time.sleep(2)
+                    continue  # 如果因为交易价格过低而失败，则增加gas价格并重试
+                else:
+                    last_response = response  # 更新最后一次响应
+                    break  # 如果因为其他原因失败，则不再重试
             else:
                 last_response = response  # 更新最后一次响应
-                break  # 如果因为其他原因失败，则不再重试
+                break
 
         # 所有尝试后仍未成功发送交易，返回最后一次失败的response
         print("Failed to send transaction after retries.")
         return last_response
+
 
