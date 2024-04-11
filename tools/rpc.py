@@ -168,6 +168,7 @@ class Rpc:
             elif response and 'error' in response and 'nonce too low' in response['error'].get('message', ''):
                 print(f"Attempt {attempt+1} failed, nonce too low. Retrying...")
                 last_response = response  # 更新最后一次响应
+                time.sleep(2)
                 continue  # 如果因为nonce过低而失败，则重试
             else:
                 last_response = response  # 更新最后一次响应
