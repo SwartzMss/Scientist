@@ -11,7 +11,7 @@ def log(text):
     print(message)
 
 class YesCaptchaClient:
-    def __init__(self,  client_key, logger = log,):
+    def __init__(self,  client_key, logger = log):
         self.client_key = client_key
         self.base_url = 'https://api.yescaptcha.com'
         self.logger = logger

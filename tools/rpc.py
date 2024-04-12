@@ -7,14 +7,18 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
     }
 
+def mylog(text):
+    print(message)
+
 class Rpc:
     """
     eth rpc方法
     """
-    def __init__(self, rpc='https://rpc.ankr.com/eth_goerli', chainid=5, proxies=None):
+    def __init__(self, rpc='https://rpc.ankr.com/eth_goerli', chainid=5, proxies=None,logger = mylog):
         self.rpc = rpc
         self.chainid = chainid
         self.proxies = proxies
+        self.logger = logger
 
     def get_transaction_nonce(self, address):
         """获取交易数"""
@@ -23,7 +27,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
-            print(f"get_gas_price  Error: {e}")
+            self.logger(f"get_transaction_nonce  Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
@@ -35,7 +39,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
-            print(f"get_gas_price  Error: {e}")
+            self.logger(f"get_current_block  Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
@@ -49,7 +53,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
-            print(f"get_gas_price  Error: {e}")
+            self.logger(f"get_block_detail  Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
@@ -60,7 +64,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
-            print(f"get_gas_price  Error: {e}")
+            self.logger(f"call  Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
@@ -72,7 +76,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
-            print(f"get_gas_price  Error: {e}")
+            self.logger(f"get_transaction  Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
@@ -80,25 +84,33 @@ class Rpc:
     def get_gas_price(self):
         """获取gas"""
         data = {"jsonrpc":"2.0","method":"eth_gasPrice","params":[],"id":1}
-        try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
-            return res.json()
-        except Exception as e:
-            print(f"get_gas_price  Error: {e}")
-            time.sleep(2)
-            # 处理错误，例如重试或返回默认值
-            return None
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+                return response.json()
+            except Exception as e:
+                self.logger(f"Attempt {attempt+1} failed - get_gas_price Error: {e}")
+                time.sleep(2)
+
+        # 所有重试尝试后还是失败，则返回None
+        print("Failed to get gas price after several attempts.")
+        return None
 
     def get_transaction_count_by_address(self, address):
         data = {"jsonrpc":"2.0","method":"eth_getTransactionCount","params":[address,'latest'],"id":1}
-        try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
-            return res.json()
-        except Exception as e:
-            print(f"get_gas_price  Error: {e}")
-            time.sleep(2)
-            # 处理错误，例如重试或返回默认值
-            return None
+        max_retries = 5
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+                return response.json()
+            except Exception as e:
+                self.logger(f"Attempt {attempt + 1} failed - get_transaction_count_by_address Error: {e}")
+                time.sleep(2)
+
+        # 所有重试尝试后还是失败，则记录并返回None
+        self.logger("Failed to get transaction count after several attempts.")
+        return None
 
     def send_raw_transaction(self, hex):
         """广播交易"""
@@ -107,7 +119,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
-            print(f"send_raw_transaction  Error: {e}")
+            self.logger(f"send_raw_transaction  Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
@@ -119,7 +131,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
             return res.json()  # (int(res.json()['result'], 16)) / math.pow(10, 18)
         except Exception as e:
-            print(f"get_balance Exception Error: {e}")
+            self.logger(f"get_balance Exception Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
@@ -131,7 +143,7 @@ class Rpc:
             res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
-            print(f"get_gas_price  Error: {e}")
+            self.logger(f"get_code  Error: {e}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
@@ -168,12 +180,12 @@ class Rpc:
             elif response and 'error' in response:
                 error_message = response['error'].get('message', '')
                 if 'nonce too low' in error_message:
-                    print(f"Attempt {attempt+1} failed, nonce too low. Retrying...")
+                    self.logger(f"Attempt {attempt+1} failed, nonce too low. Retrying...")
                     last_response = response  # 更新最后一次响应
                     time.sleep(2)
                     continue  # 如果因为nonce过低而失败，则重试
                 elif 'transaction underpriced' in error_message:
-                    print(f"Attempt {attempt+1} failed, transaction underpriced. Increasing gas price by 10% and retrying...")
+                    self.logger(f"Attempt {attempt+1} failed, transaction underpriced. Increasing gas price by 10% and retrying...")
                     gasprice = int(gasprice * 1.1)  # 增加10%的gas价格
                     last_response = response  # 更新最后一次响应
                     time.sleep(2)
@@ -186,7 +198,7 @@ class Rpc:
                 break
 
         # 所有尝试后仍未成功发送交易，返回最后一次失败的response
-        print("Failed to send transaction after retries.")
+        self.logger("Failed to send transaction after retries.")
         return last_response
 
 
