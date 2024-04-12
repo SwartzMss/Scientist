@@ -44,7 +44,7 @@ def log_and_print(text):
 class MorphSwapGM:
     def __init__(self, rpc_url="https://eth-sepolia-public.unifra.io", chain_id=11155111):
         self.alias = None
-        self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
+        self.rpc = Rpc(rpc=rpc_url, chainid=chain_id, logger = log_and_print)
         self.gaslimit = 750000
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = None

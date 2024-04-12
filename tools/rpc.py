@@ -7,7 +7,7 @@ headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
     }
 
-def mylog(text):
+def mylog(message):
     print(message)
 
 class Rpc:
@@ -88,7 +88,9 @@ class Rpc:
         for attempt in range(max_retries):
             try:
                 response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-                return response.json()
+                data =  response.json()
+                self.logger(f" get_gas_price data:{data}")
+                return data
             except Exception as e:
                 self.logger(f"Attempt {attempt+1} failed - get_gas_price Error: {e}")
                 time.sleep(2)
