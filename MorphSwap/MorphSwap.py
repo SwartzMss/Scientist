@@ -183,25 +183,28 @@ class MorphSwapGM:
         BALANCE_PRECISION = math.pow(10, 18)  # 主币精度，18位
         value = int(amount * BALANCE_PRECISION)  # 计算要发送的amount
         try:
-            gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
-            log_and_print(f"{alias} gasprice = {gasprice}")
+            response = self.rpc.get_gas_price()
+            if 'error' in response:
+                raise Exception(f"get_gas_price Error: {response}")
+            gasprice = int(response['result'], 16) * 2
+            log_and_print(f"{alias} swap_eth_to_morph gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, value, self.gaslimit, gasprice, data=data)
-            log_and_print(f"{alias} response = {response}")
+            log_and_print(f"{alias} swap_eth_to_morph response = {response}")
             if 'error' in response:
-                raise Exception(f"Error: {response}")
+                raise Exception(f" transfer Error: {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} swap_bera_to_stgusdc.transfer successfully hash = {hasResult}")
             self.QueueForSwapFromEthtoMorph.append((alias, hasResult))
 
         except Exception as e:
-            log_and_print(f"{alias} swap_eth_to_morph.transfer failed: {e}")
-            excel_manager.update_info(alias, f" transfer failed: {e}", "swap_eth_to_morph")
+            log_and_print(f"{alias} swap_eth_to_morph failed: {e}")
+            excel_manager.update_info(alias, f" {e}", "swap_eth_to_morph")
 
 
 
     def approve_action(self,alias, private_key):
-        amount = round(random.uniform(0.1, 0.5), 1)
+        amount = round(random.uniform(1.1, 3.5), 1)
         self.account = self.web3.eth.account.from_key(private_key) 
         balance = self.get_usdt_balance()
         approval_mount = self.get_approval_amount()
@@ -220,19 +223,22 @@ class MorphSwapGM:
         MethodID="0x095ea7b3" 
         try:
             data = MethodID + param
-            gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
-            log_and_print(f"{alias} gasprice = {gasprice}")
+            response = self.rpc.get_gas_price()
+            if 'error' in response:
+                raise Exception(f"get_gas_price Error: {response}")
+            gasprice = int(response['result'], 16) * 2
+            log_and_print(f"{alias} approve_action gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
-            log_and_print(f"{alias} response = {response}")
+            log_and_print(f"{alias} approve_action response = {response}")
             if 'error' in response:
-                raise Exception(f"Error: {response}")
+                raise Exception(f"transfer Error: {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} approve_action successfully hash = {hasResult}")
             self.QueueForApprovalResult.append((alias, private_key, hasResult, amount))
         except Exception as e:
             log_and_print(f"{alias} approve_action failed: {e}")
-            excel_manager.update_info(alias, f" approve_action failed: {e}", "approve_action")
+            excel_manager.update_info(alias, f" {e}", "approve_action")
 
 
     def batch_swap_usdt_to_morph(self):
@@ -250,20 +256,23 @@ class MorphSwapGM:
         data = MethodID + param
         BALANCE_PRECISION = math.pow(10, 18)  # 主币精度，18位
         try:
-            gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
-            log_and_print(f"{alias} gasprice = {gasprice}")
+            response = self.rpc.get_gas_price()
+            if 'error' in response:
+                raise Exception(f"get_gas_price Error: {response}")
+            gasprice = int(response['result'], 16) * 2
+            log_and_print(f"{alias} swap_usdt_to_morph gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
-            log_and_print(f"{alias} response = {response}")
+            log_and_print(f"{alias} swap_usdt_to_morph response = {response}")
             if 'error' in response:
-                raise Exception(f"Error: {response}")
+                raise Exception(f"transfer Error: {response}")
             hasResult = response["result"]
             log_and_print(f"{alias} swap_usdt_to_morph transfer successfully hash = {hasResult}")
             self.QueueForSwapFromUSDTtoMorphResult.append((alias, hasResult))
 
         except Exception as e:
-            log_and_print(f"{alias} swap_usdt_to_morph transfer failed: {e}")
-            excel_manager.update_info(alias, f" transfer failed: {e}", "swap_usdt_to_morph")
+            log_and_print(f"{alias} swap_usdt_to_morph failed: {e}")
+            excel_manager.update_info(alias, f" {e}", "swap_usdt_to_morph")
 
     def check_all_transaction_for_SwapFromEthtoMorph(self):
         for alias, tx_hash in self.QueueForSwapFromEthtoMorph:
@@ -336,7 +345,7 @@ if __name__ == "__main__":
     # swap_eth_to_morph
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
-        time.sleep(2)
+        time.sleep(3)
         log_and_print(f"statring running by alias {alias}")
         private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
         app.approve_action(alias, private_key)
