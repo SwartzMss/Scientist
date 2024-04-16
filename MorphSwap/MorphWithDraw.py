@@ -44,15 +44,16 @@ class MorphWithDrawForMorp:
     def __init__(self, ):
         self.alias = None
         self.rpcForSepolia = Rpc(rpc_url="https://eth-sepolia-public.unifra.io", chain_id=11155111, logger = log_and_print)
-        self.web3ForSepolia = Web3(Web3.HTTPProvider(rpc_url))
-        self.rpcForMorphTest = Rpc(rpc_url="https://eth-sepolia-public.unifra.io", chain_id=2710, logger = log_and_print)
+        self.web3ForSepolia = Web3(Web3.HTTPProvider("https://eth-sepolia-public.unifra.io"))
+        self.rpcForMorphTest = Rpc(rpc_url="https://rpc-testnet.morphl2.io", chain_id=2710, logger = log_and_print)
         self.web3ForMorphTest = Web3(Web3.HTTPProvider("https://rpc-testnet.morphl2.io"))
         self.gaslimit = 750000
         self.account = None
-        self.QueueForApprovalResult = []
-        self.QueueForSwapFromEthtoMorph = []
-        self.QueueForSwapFromUSDTtoMorph = []
-        self.QueueForSwapFromUSDTtoMorphResult = []
+        self.QueueForwithdrawTo = []
+        self.QueueForproveWithdrawalTransaction = []
+        self.QueueForproveWithdrawalTransactionResult = []
+        self.QueueForfinalizeWithdrawalTransaction = []
+        self.QueueForfinalizeWithdrawalTransactionResult = []
         self.headers = {
             'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -72,7 +73,7 @@ class MorphWithDrawForMorp:
         amount = Web3.to_wei(amount, 'ether')
         encoded_data = encode(
             ["address", "address", "uint256","uint32","bytes"],
-            [Web3.to_checksum_address("uint32"), self.account.address,self.account.address,amount,0, b'']
+            [Web3.to_checksum_address("0xdeaddeaddeaddeaddeaddeaddeaddeaddead0000"), self.account.address,amount,0, b'']
         )
         encoded_data_hex = encoded_data.hex()
         log_and_print(f"encodeABI_withdrawTo  = {encoded_data_hex}")
@@ -88,7 +89,7 @@ class MorphWithDrawForMorp:
             try:
                 if type == 0:
                     receipt = self.web3ForSepolia.eth.get_transaction_receipt(tx_hash)                
-                else
+                else:
                     receipt = self.web3ForMorphTest.eth.get_transaction_receipt(tx_hash)                
                 if receipt is not None:
                     if receipt.status == 1:
@@ -106,7 +107,7 @@ class MorphWithDrawForMorp:
 
     def withdrawTo_action(self,alias, private_key):
         amount = round(random.uniform(0.001, 0.005), 3)
-        self.account = self.web3.eth.account.from_key(private_key) 
+        self.account = self.web3ForMorphTest.eth.account.from_key(private_key) 
         balance = self.get_MorphTest_eth_balance()
         log_and_print(f"alias {alias},amount= {amount} MorphTest_eth balance= {balance}")
         if balance == None or balance < Decimal(amount):
@@ -114,35 +115,64 @@ class MorphWithDrawForMorp:
             excel_manager.update_info(alias, f"too less MorphTest_eth balance->{balance} amount = {amount} skipped", "withdrawTo_action")
             return
         __contract_addr = Web3.to_checksum_address("0x4200000000000000000000000000000000000010")
-        param = self.encodeABI_approve(amount)
-        MethodID="0x095ea7b3" 
+        param = self.encodeABI_withdrawTo(amount)
+        MethodID="0xa3a79548" 
         try:
             data = MethodID + param
-            response = self.rpc.get_gas_price()
+            response = self.rpcForMorphTest.get_gas_price()
             if 'error' in response:
                 raise Exception(f"get_gas_price Error: {response}")
             gasprice = int(response['result'], 16) * 2
-            log_and_print(f"{alias} approve_action gasprice = {gasprice}")
-            response = self.rpc.transfer(
+            log_and_print(f"{alias} withdrawTo_action gasprice = {gasprice}")
+            response = self.rpcForMorphTest.transfer(
                 self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
-            log_and_print(f"{alias} approve_action response = {response}")
+            log_and_print(f"{alias} withdrawTo_action response = {response}")
             if 'error' in response:
                 raise Exception(f"transfer Error: {response}")
             hasResult = response["result"]
-            log_and_print(f"{alias} approve_action successfully hash = {hasResult}")
-            self.QueueForApprovalResult.append((alias, private_key, hasResult, amount))
+            log_and_print(f"{alias} withdrawTo_action successfully hash = {hasResult}")
+            self.QueueForwithdrawTo.append((alias, private_key, hasResult, amount))
         except Exception as e:
-            log_and_print(f"{alias} approve_action failed: {e}")
-            excel_manager.update_info(alias, f" {e}", "approve_action")
+            log_and_print(f"{alias} withdrawTo_action failed: {e}")
+            excel_manager.update_info(alias, f" {e}", "withdrawTo_action")
+
+
+    def check_all_transaction_for_withdrawTo(self):
+        for alias, private_key, tx_hash,amount in self.QueueForwithdrawTo:
+            log_and_print(f"{alias} start checking transaction status for withdrawTo")
+            code,msg = self.check_transaction_status(tx_hash,type = 1)
+            log_and_print(f"{alias} withdrawTo tx_hash = {tx_hash} code = {code} msg = {msg}")
+            excel_manager.update_info(alias, f"tx_hash = {tx_hash} code = {code} msg = {msg}","withdrawTo")
+            if code != True:
+                continue
+            self.QueueForproveWithdrawalTransaction.append((alias, private_key,amount))
+        self.QueueForwithdrawTo.clear()
+
+    def check_all_transaction_for_proveWithdrawalTransaction(self):
+        for alias, private_key, tx_hash,amount in self.QueueForproveWithdrawalTransactionResult:
+            log_and_print(f"{alias} start checking transaction status for QueueForproveWithdrawalTransactionResult")
+            code,msg = self.check_transaction_status(tx_hash,type = 0)
+            log_and_print(f"{alias} QueueForproveWithdrawalTransactionResult tx_hash = {tx_hash} code = {code} msg = {msg}")
+            excel_manager.update_info(alias, f"tx_hash = {tx_hash} code = {code} msg = {msg}","QueueForproveWithdrawalTransactionResult")
+            if code != True:
+                continue
+            self.QueueForfinalizeWithdrawalTransaction.append((alias, private_key,amount))
+        self.QueueForproveWithdrawalTransactionResult.clear()
+
+    def check_all_transaction_for_finalizeWithdrawalTransactionResult(self):
+        for alias, private_key, tx_hash,amount in self.QueueForfinalizeWithdrawalTransactionResult:
+            log_and_print(f"{alias} start checking transaction status for QueueForfinalizeWithdrawalTransactionResult")
+            code,msg = self.check_transaction_status(tx_hash,type = 0)
+            log_and_print(f"{alias} QueueForfinalizeWithdrawalTransactionResult tx_hash = {tx_hash} code = {code} msg = {msg}")
+            excel_manager.update_info(alias, f"tx_hash = {tx_hash} code = {code} msg = {msg}","QueueForfinalizeWithdrawalTransactionResult")
+        self.QueueForfinalizeWithdrawalTransactionResult.clear()
 
 
 if __name__ == "__main__":
     UserInfoApp = UserInfo(log_and_print)
-    excel_manager = excelWorker("MorphWithDrawGM_", log_and_print)
-    app = MorphWithDrawGM_()
+    excel_manager = excelWorker("MorphWithDrawGM", log_and_print)
+    app = MorphWithDrawForMorp()
 
-
-    # swap_morth_to_eth
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         time.sleep(3)
@@ -150,3 +180,7 @@ if __name__ == "__main__":
         private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
         app.withdrawTo_action(alias, private_key)
         
+    app.check_all_transaction_for_withdrawTo()
+    app.batch_proveWithdrawalTransaction()
+    app.check_all_transaction_for_proveWithdrawalTransaction()
+    excel_manager.save_msg_and_stop_service()
