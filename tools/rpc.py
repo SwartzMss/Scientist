@@ -122,14 +122,25 @@ class Rpc:
     def get_balance(self, address):
         """获取余额"""
         data = {"jsonrpc": "2.0", "method": "eth_getBalance", "params": [address, 'latest'], "id": 1}
-        try:
-            res = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-            return res.json()  # (int(res.json()['result'], 16)) / math.pow(10, 18)
-        except Exception as e:
-            self.logger(f"get_balance Exception Error: {e}")
-            time.sleep(2)
-            # 处理错误，例如重试或返回默认值
-            return None
+        max_retries = 5  # 设置最大重试次数
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+                result = response.json()
+                if result and 'error' in result:
+                    raise Exception(f"Error from server: {result['error']}")
+
+                # 直接返回 JSON 响应
+                return result
+
+            except Exception as e:
+                self.logger(f"Attempt {attempt + 1} failed - get_balance Error: {e}")
+                time.sleep(2)  # 发生异常时等待2秒再重试
+
+        # 如果所有重试尝试后还是失败，则记录错误并返回None
+        self.logger("Failed to get balance after several attempts.")
+        return None
+
 
     def get_code(self, address, block="latest"):
         block = hex(block) if isinstance(block, int) else block
@@ -195,3 +206,5 @@ class Rpc:
         # 所有尝试后仍未成功发送交易，返回最后一次失败的response
         self.logger("Failed to send transaction after retries.")
         return last_response
+
+
