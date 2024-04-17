@@ -48,10 +48,7 @@ class MintChainSwapGM:
         self.web3ForMintChain = Web3(Web3.HTTPProvider("sepolia-testnet-rpc.mintchain.io"))
         self.gaslimit = 750000
         self.account = None
-        self.QueueForApprovalResult = []
-        self.QueueForSwapFromEthtoMorph = []
-        self.QueueForSwapFromUSDTtoMorph = []
-        self.QueueForSwapFromUSDTtoMorphResult = []
+        self.QueueForSwapFromEthtoMint = []
         self.headers = {
             'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
@@ -74,7 +71,17 @@ class MintChainSwapGM:
         balance_wei = int(balance_result['result'], 16)
         balance_bera = self.web3.from_wei(balance_wei, 'ether')
         return Decimal(balance_bera)
+        
+    def encodeABI_bridgeETHTo(self):
+        encoded_data = encode(
+            ["address", "uint32", "bytes"],
+            [self.account.address, 200000, b'']
+        )
+        encoded_data_hex = encoded_data.hex()
+        log_and_print(f"encodeABI_bridgeETHTo  = {encoded_data_hex}")
+        return encoded_data_hex
 
+    
     def swap_eth_to_mint(self, alias, private_key):
         amount = round(random.uniform(0.001, 0.005), 3)
         self.account = self.web3.eth.account.from_key(private_key) 
@@ -84,9 +91,9 @@ class MintChainSwapGM:
             log_and_print(f"alias {alias},swap_eth_to_mint balance= {balance} amount= {amount} too less balance skipped")
             excel_manager.update_info(alias, f"too less balance->{balance} amount = {amount} skipped","swap_eth_to_mint")
             return
-        __contract_addr = Web3.to_checksum_address("0xcb95f07b1f60868618752ceabbe4e52a1f564336")
-        MethodID="0x9a2ac6d5"
-        param = self.encodeABI_depositETHTo()
+        __contract_addr = Web3.to_checksum_address("0x57Fc396328b665f0f8bD235F0840fCeD43128c6b")
+        MethodID="0xe11013dd"
+        param = self.encodeABI_bridgeETHTo()
         data = MethodID + param
         BALANCE_PRECISION = math.pow(10, 18)  # 主币精度，18位
         value = int(amount * BALANCE_PRECISION)  # 计算要发送的amount
@@ -95,55 +102,29 @@ class MintChainSwapGM:
             if 'error' in response:
                 raise Exception(f"get_gas_price Error: {response}")
             gasprice = int(response['result'], 16) * 2
-            log_and_print(f"{alias} swap_eth_to_morph gasprice = {gasprice}")
+            log_and_print(f"{alias} swap_eth_to_mint gasprice = {gasprice}")
             response = self.rpc.transfer(
                 self.account, __contract_addr, value, self.gaslimit, gasprice, data=data)
-            log_and_print(f"{alias} swap_eth_to_morph response = {response}")
+            log_and_print(f"{alias} swap_eth_to_mint response = {response}")
             if 'error' in response:
                 raise Exception(f" transfer Error: {response}")
             hasResult = response["result"]
-            log_and_print(f"{alias} swap_bera_to_stgusdc.transfer successfully hash = {hasResult}")
-            self.QueueForSwapFromEthtoMorph.append((alias, hasResult))
+            log_and_print(f"{alias} swap_eth_to_mint.transfer successfully hash = {hasResult}")
+            self.QueueForSwapFromEthtoMint.append((alias, hasResult))
 
         except Exception as e:
-            log_and_print(f"{alias} swap_eth_to_morph failed: {e}")
-            excel_manager.update_info(alias, f" {e}", "swap_eth_to_morph")
-
-    def swap_mint_to_eth(self, alias, private_key):
-        amount = round(random.uniform(0.001, 0.005), 3)
-        self.account = self.web3.eth.account.from_key(private_key) 
-        balance = self.get_eth_balance()
-        log_and_print(f"alias {alias},balance= {balance} amount= {amount}")
-        if balance == None or balance < Decimal(amount):
-            log_and_print(f"alias {alias},swap_eth_to_mint balance= {balance} amount= {amount} too less balance skipped")
-            excel_manager.update_info(alias, f"too less balance->{balance} amount = {amount} skipped","swap_eth_to_mint")
-            return
-        __contract_addr = Web3.to_checksum_address("0xcb95f07b1f60868618752ceabbe4e52a1f564336")
-        MethodID="0x9a2ac6d5"
-        param = self.encodeABI_depositETHTo()
-        data = MethodID + param
-        BALANCE_PRECISION = math.pow(10, 18)  # 主币精度，18位
-        value = int(amount * BALANCE_PRECISION)  # 计算要发送的amount
-        try:
-            response = self.rpc.get_gas_price()
-            if 'error' in response:
-                raise Exception(f"get_gas_price Error: {response}")
-            gasprice = int(response['result'], 16) * 2
-            log_and_print(f"{alias} swap_eth_to_morph gasprice = {gasprice}")
-            response = self.rpc.transfer(
-                self.account, __contract_addr, value, self.gaslimit, gasprice, data=data)
-            log_and_print(f"{alias} swap_eth_to_morph response = {response}")
-            if 'error' in response:
-                raise Exception(f" transfer Error: {response}")
-            hasResult = response["result"]
-            log_and_print(f"{alias} swap_bera_to_stgusdc.transfer successfully hash = {hasResult}")
-            self.QueueForSwapFromEthtoMorph.append((alias, hasResult))
-
-        except Exception as e:
-            log_and_print(f"{alias} swap_eth_to_morph failed: {e}")
-            excel_manager.update_info(alias, f" {e}", "swap_eth_to_morph")
+            log_and_print(f"{alias} swap_eth_to_mint failed: {e}")
+            excel_manager.update_info(alias, f" {e}", "swap_eth_to_mint")
 
 
+    def check_all_transaction_for_SwapFromEthtoMint(self):
+        for alias, tx_hash in self.QueueForSwapFromEthtoMint:
+            log_and_print(f"{alias} start checking transaction status for SwapFromEthtoMorph")
+            code,msg = self.check_transaction_status(tx_hash)
+            log_and_print(f"{alias} SwapFromEthtoMint tx_hash = {tx_hash} code = {code} msg = {msg}")
+            excel_manager.update_info(alias, f"tx_hash = {tx_hash} code = {code} msg = {msg}", "SwapFromEthtoMint")
+        self.QueueForSwapFromEthtoMint.clear()
+    
     def check_transaction_status(self, tx_hash, timeout=300, interval=10,type = 0):
         """type = 0 代表sepolia  1代表mintchain"""
         """检查交易的状态，返回是否确认和交易状态。使用计数器实现超时。"""
@@ -181,19 +162,7 @@ if __name__ == "__main__":
         log_and_print(f"statring running by alias {alias}")
         private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
         app.swap_eth_to_morph(alias, private_key)
-    app.check_all_transaction_for_SwapFromEthtoMorph()
+    app.check_all_transaction_for_SwapFromEthtoMint()
 
     time.sleep(5)
-
-    # swap_eth_to_morph
-    alais_list = UserInfoApp.find_alias_by_path()
-    for alias in alais_list:
-        time.sleep(3)
-        log_and_print(f"statring running by alias {alias}")
-        private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
-        app.approve_action(alias, private_key)
-        
-    app.check_all_transaction_for_Approve()
-    app.batch_swap_usdt_to_morph()
-    app.check_all_transaction_for_SwapFromUSDTtoMorph()
     excel_manager.save_msg_and_stop_service()
