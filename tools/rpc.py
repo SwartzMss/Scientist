@@ -20,18 +20,6 @@ class Rpc:
         self.proxies = proxies
         self.logger = logger
 
-    def get_transaction_nonce(self, address):
-        """获取交易数"""
-        data = {"jsonrpc":"2.0","method":"eth_getTransactionCount","params":[address,'pending'],"id":1}
-        try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
-            return res.json()
-        except Exception as e:
-            self.logger(f"get_transaction_nonce  Error: {e}")
-            time.sleep(2)
-            # 处理错误，例如重试或返回默认值
-            return None
-
     def get_current_block(self):
         """获取最新区块"""
         data = {"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}
@@ -100,7 +88,7 @@ class Rpc:
         print("Failed to get gas price after several attempts.")
         return None
 
-    def get_transaction_count_by_address(self, address):
+    def get_transaction_nonce(self, address):
         data = {"jsonrpc":"2.0","method":"eth_getTransactionCount","params":[address,'latest'],"id":1}
         max_retries = 5
         for attempt in range(max_retries):
@@ -112,7 +100,7 @@ class Rpc:
                 return data
 
             except Exception as e:
-                self.logger(f"Attempt {attempt + 1} failed - get_transaction_count_by_address Error: {e}")
+                self.logger(f"Attempt {attempt + 1} failed - get_transaction_nonce Error: {e}")
                 time.sleep(2)
 
         # 所有重试尝试后还是失败，则记录并返回None
@@ -174,7 +162,7 @@ class Rpc:
 
         # 尝试发送交易，最多重试max_retries次
         for attempt in range(max_retries):
-            nonce = int(self.get_transaction_count_by_address(account.address)['result'], 16)
+            nonce = int(self.get_transaction_nonce(account.address)['result'], 16)
             tx = {'from': account.address, 'value': amount, 'to': to, 'gas': gaslimit, 'gasPrice': gasprice, 'nonce': nonce, 'chainId': self.chainid}
             if kw:
                 tx.update(kw)
@@ -207,5 +195,3 @@ class Rpc:
         # 所有尝试后仍未成功发送交易，返回最后一次失败的response
         self.logger("Failed to send transaction after retries.")
         return last_response
-
-
