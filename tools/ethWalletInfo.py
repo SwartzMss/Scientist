@@ -42,6 +42,18 @@ blockchains = {
     "arb_eth": {
         "url": "https://arbitrum.llamarpc.com",
         "chain_id": 42161
+    },
+        "sepolia": {
+        "url": "https://eth-sepolia-public.unifra.io",
+        "chain_id": 11155111
+    },
+        "morphl2": {
+        "url": "https://rpc-testnet.morphl2.io",
+        "chain_id": 2710
+    },
+     "mint_eth": {
+        "url": "https://sepolia-testnet-rpc.mintchain.io",
+        "chain_id": 1687
     }
 }
 

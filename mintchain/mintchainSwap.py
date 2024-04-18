@@ -42,9 +42,9 @@ def log_and_print(text):
 class MintChainSwapGM:
     def __init__(self):
         self.alias = None
-        self.rpcForSepolia = Rpc(rpc_url="https://eth-sepolia-public.unifra.io", chain_id=11155111, logger = log_and_print)
+        self.rpcForSepolia = Rpc(rpc="https://eth-sepolia-public.unifra.io", chainid=11155111, logger = log_and_print)
         self.web3ForSepolia = Web3(Web3.HTTPProvider("https://eth-sepolia-public.unifra.io"))
-        self.rpcForMintChain = Rpc(rpc_url="sepolia-testnet-rpc.mintchain.io ", chain_id=1687, logger = log_and_print)
+        self.rpcForMintChain = Rpc(rpc="sepolia-testnet-rpc.mintchain.io", chainid=1687, logger = log_and_print)
         self.web3ForMintChain = Web3(Web3.HTTPProvider("sepolia-testnet-rpc.mintchain.io"))
         self.gaslimit = 750000
         self.account = None
@@ -61,7 +61,7 @@ class MintChainSwapGM:
         if balance_result == None:
             return None
         balance_wei = int(balance_result['result'], 16)
-        balance_bera = self.web3.from_wei(balance_wei, 'ether')
+        balance_bera = self.web3ForSepolia.from_wei(balance_wei, 'ether')
         return Decimal(balance_bera)
 
     def get_Mint_eth_balance(self):
@@ -69,7 +69,7 @@ class MintChainSwapGM:
         if balance_result == None:
             return None
         balance_wei = int(balance_result['result'], 16)
-        balance_bera = self.web3.from_wei(balance_wei, 'ether')
+        balance_bera = self.web3ForMintChain.from_wei(balance_wei, 'ether')
         return Decimal(balance_bera)
         
     def encodeABI_bridgeETHTo(self):
@@ -84,12 +84,12 @@ class MintChainSwapGM:
     
     def swap_eth_to_mint(self, alias, private_key):
         amount = round(random.uniform(0.001, 0.005), 3)
-        self.account = self.web3.eth.account.from_key(private_key) 
+        self.account = self.web3ForSepolia.eth.account.from_key(private_key) 
         balance = self.get_eth_balance()
         log_and_print(f"alias {alias},balance= {balance} amount= {amount}")
         if balance == None or balance < Decimal(amount):
             log_and_print(f"alias {alias},swap_eth_to_mint balance= {balance} amount= {amount} too less balance skipped")
-            excel_manager.update_info(alias, f"too less balance->{balance} amount = {amount} skipped","swap_eth_to_mint")
+            excel_manager.update_info(alias, f"too less balance->{balance} amount = {amount} skipped","SwapFromEthtoMint")
             return
         __contract_addr = Web3.to_checksum_address("0x57Fc396328b665f0f8bD235F0840fCeD43128c6b")
         MethodID="0xe11013dd"
@@ -98,12 +98,12 @@ class MintChainSwapGM:
         BALANCE_PRECISION = math.pow(10, 18)  # 主币精度，18位
         value = int(amount * BALANCE_PRECISION)  # 计算要发送的amount
         try:
-            response = self.rpc.get_gas_price()
+            response = self.rpcForSepolia.get_gas_price()
             if 'error' in response:
                 raise Exception(f"get_gas_price Error: {response}")
             gasprice = int(response['result'], 16) * 2
             log_and_print(f"{alias} swap_eth_to_mint gasprice = {gasprice}")
-            response = self.rpc.transfer(
+            response = self.rpcForSepolia.transfer(
                 self.account, __contract_addr, value, self.gaslimit, gasprice, data=data)
             log_and_print(f"{alias} swap_eth_to_mint response = {response}")
             if 'error' in response:
@@ -119,7 +119,7 @@ class MintChainSwapGM:
 
     def check_all_transaction_for_SwapFromEthtoMint(self):
         for alias, tx_hash in self.QueueForSwapFromEthtoMint:
-            log_and_print(f"{alias} start checking transaction status for SwapFromEthtoMorph")
+            log_and_print(f"{alias} start checking transaction status for SwapFromEthtoMint")
             code,msg = self.check_transaction_status(tx_hash)
             log_and_print(f"{alias} SwapFromEthtoMint tx_hash = {tx_hash} code = {code} msg = {msg}")
             excel_manager.update_info(alias, f"tx_hash = {tx_hash} code = {code} msg = {msg}", "SwapFromEthtoMint")
@@ -156,12 +156,12 @@ if __name__ == "__main__":
     excel_manager = excelWorker("MintChainSwapGM", log_and_print)
     app = MintChainSwapGM()
 
-    # swap_eth_to_morph
+    # swap_eth_to_mint
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
-        app.swap_eth_to_morph(alias, private_key)
+        app.swap_eth_to_mint(alias, private_key)
     app.check_all_transaction_for_SwapFromEthtoMint()
 
     time.sleep(5)
