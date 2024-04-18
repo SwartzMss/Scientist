@@ -83,6 +83,7 @@ class GenomefiBalance:
         try:
             balance = contract.functions.balanceOf(self.account.address).call()
             balance = Web3.from_wei(balance, 'ether')
+            log_and_print(f"alias {alias},  balances : {balance}")
             excel_manager.update_info(self.alias, f" balance = {balance}")
         except Exception as e:
             log_and_print(f"alias {alias}, get balances failed: {e}")
@@ -91,6 +92,7 @@ class GenomefiBalance:
 
 if __name__ == "__main__":
     UserInfoApp = UserInfo(log_and_print)
+    excel_manager = excelWorker("GenomefiBalance", log_and_print)
     app = GenomefiBalance()
 
     alais_list = UserInfoApp.find_alias_by_path()

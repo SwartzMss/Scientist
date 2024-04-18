@@ -3,8 +3,9 @@ import sys
 import datetime
 from decimal import Decimal
 from solathon import Client, PublicKey, Keypair
+from spl.token.constants import TOKEN_PROGRAM_ID
 import base58
-
+import time
 # 假设你的工具目录结构与之前类似
 script_dir = os.path.dirname(os.path.abspath(__file__))
 parent_dir = os.path.dirname(script_dir)
@@ -29,19 +30,20 @@ class SolanaWalletInfo:
         try:
             # 查询特定所有者名下的所有代币账户
             response = self.client.get_token_accounts_by_owner(
-                owner=PublicKey(address),
-                token_program_id=TOKEN_PROGRAM_ID
+                public_key=PublicKey(address),
+                program_id= "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
             )
             
             # 遍历所有代币账户以找到与指定合约匹配的账户
-            for token_account in response['result']['value']:
-                if token_account['account']['data']['parsed']['info']['mint'] == mint_address:
+            for token_account in response:
+                if token_account.account.data['parsed']['info']['mint'] == mint_address:
                     # 获取代币账户的公钥
-                    token_account_pubkey = token_account['pubkey']
+                    token_account_pubkey = token_account.pubkey
                     # 查询该代币账户的余额
                     balance_response = self.client.get_token_account_balance(PublicKey(token_account_pubkey))
-                    balance_lamports = Decimal(balance_response['result']['value']['amount'])
-                    balance_sol = balance_lamports / Decimal('1000000000')  # Convert Lamports to SOL
+                    balance_lamports = Decimal(balance_response['amount'])
+                    decimals = balance_response['decimals']
+                    balance_sol = balance_lamports / (Decimal('10') ** decimals)
                     return balance_sol
             return Decimal('0')  # 如果没有找到代币账户，返回0
         except Exception as e:
@@ -84,9 +86,9 @@ if __name__ == "__main__":
         balance = sol_app.get_balance(address)  # 查询余额
         log_and_print(f"{alias} SOL_balance {balance}")
         excel_manager.update_info(alias, str(balance), "SOL_balance")
-        
+        time.sleep(5)
         balance = sol_app.get_program_balance(address,"kzyC6U8E8uWwuKHHLkFE5kGiG7qwupKtX31cQo9Y5nv")  # 查询余额
         log_and_print(f"{alias} GPT_balance {balance}")
         excel_manager.update_info(alias, str(balance), "GPT_balance")
-    
+        time.sleep(5)
     excel_manager.save_msg_and_stop_service()
