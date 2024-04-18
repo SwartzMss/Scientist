@@ -25,6 +25,29 @@ class SolanaWalletInfo:
         balance_sol = Decimal(balance_lamports) / 1000000000  # 1 SOL = 1 billion Lamports
         return balance_sol
 
+    def get_program_balance(self, address, mint_address):
+        try:
+            # 查询特定所有者名下的所有代币账户
+            response = self.client.get_token_accounts_by_owner(
+                owner=PublicKey(address),
+                token_program_id=TOKEN_PROGRAM_ID
+            )
+            
+            # 遍历所有代币账户以找到与指定合约匹配的账户
+            for token_account in response['result']['value']:
+                if token_account['account']['data']['parsed']['info']['mint'] == mint_address:
+                    # 获取代币账户的公钥
+                    token_account_pubkey = token_account['pubkey']
+                    # 查询该代币账户的余额
+                    balance_response = self.client.get_token_account_balance(PublicKey(token_account_pubkey))
+                    balance_lamports = Decimal(balance_response['result']['value']['amount'])
+                    balance_sol = balance_lamports / Decimal('1000000000')  # Convert Lamports to SOL
+                    return balance_sol
+            return Decimal('0')  # 如果没有找到代币账户，返回0
+        except Exception as e:
+            log_and_print(f"Error fetching balance: {e}")
+            return None
+
 
 if __name__ == "__main__":
     solana_rpc_url = "https://api.mainnet-beta.solana.com"  # 主网RPC地址
@@ -61,5 +84,9 @@ if __name__ == "__main__":
         balance = sol_app.get_balance(address)  # 查询余额
         log_and_print(f"{alias} SOL_balance {balance}")
         excel_manager.update_info(alias, str(balance), "SOL_balance")
-                
+        
+        balance = sol_app.get_program_balance(address,"kzyC6U8E8uWwuKHHLkFE5kGiG7qwupKtX31cQo9Y5nv")  # 查询余额
+        log_and_print(f"{alias} GPT_balance {balance}")
+        excel_manager.update_info(alias, str(balance), "GPT_balance")
+    
     excel_manager.save_msg_and_stop_service()
