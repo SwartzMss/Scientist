@@ -125,6 +125,28 @@ class alphaorbeta:
         log_and_print(f"{self.alias} get_profile data:{data}")
         return data
 
+    def get_endingSoonTask(self):
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/vote?category=ENDING_SOON&chainId=204"
+        response = self.session.get(url, headers=self.headers, timeout=20)
+        data = response.json()
+        log_and_print(f"{self.alias} get_endingSoonTask data:{data}")
+        return data
+
+    def get_votedTask(self):
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/vote/user/{self.userId}?chainId=204"
+        response = self.session.get(url, headers=self.headers, timeout=20)
+        data = response.json()
+        log_and_print(f"{self.alias} get_votedTask data:{data}")
+        return data
+
+
+    def get_detailVoteInfo(self,voteId):
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/vote/{voteId}/user/{self.userId}"
+        response = self.session.get(url, headers=self.headers, timeout=20)
+        data = response.json()
+        log_and_print(f"{self.alias} get_detailVoteInfo voteId {voteId} data:{data}")
+        return data
+
     def get_hasPoppedMembershipCard(self):
         run_or_not = random.randint(0, 1)  # 生成 0 或 1
         if run_or_not == 0 or energy == 0:
@@ -208,6 +230,47 @@ class alphaorbeta:
         except Exception as e:
             pass
 
+        try:
+            response = self.get_endingSoonTask()
+            if 'error' in response:
+                raise Exception(f"Error: {response}")
+            endingSoonTask_ids = [item['voteId'] for item in response['data']]
+            log_and_print(f"{alias} get_endingSoonTask successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_endingSoonTask failed: {e}")
+            excel_manager.update_info(alias, f"get_endingSoonTask failed: {e}")
+            return False
+
+        try:
+            response = self.get_votedTask()
+            if 'error' in response:
+                raise Exception(f"Error: {response}")
+            votedTask_ids = [item['voteId'] for item in response['data']]
+            log_and_print(f"{alias} get_votedTask successfully ")
+        except Exception as e:
+            log_and_print(f"{alias} get_votedTask failed: {e}")
+            excel_manager.update_info(alias, f"get_votedTask failed: {e}")
+            return False
+
+        remaining_ids = list(set(endingSoonTask_ids) - set(votedTask_ids))
+
+        # 检查remaining_ids是否不为空，然后随机选择一个
+        if remaining_ids:
+            selected_id = random.choice(remaining_ids)
+
+        try:
+            response = self.get_detailVoteInfo(selected_id)
+            if 'error' in response:
+                raise Exception(f"Error: {response}")
+            option_states = response['voteGameState']['optionStates']
+            voteTitle = response['voteTitle']
+            max_voted_option = max(option_states, key=lambda x: x['totalVoted'])
+            max_voted_option_id = max_voted_option['optionId']
+            log_and_print(f"{alias} get_detailVoteInfo successfully max_voted_option_id {max_voted_option_id} voteTitle {voteTitle}")
+        except Exception as e:
+            log_and_print(f"{alias} get_detailVoteInfo failed: {e}")
+            excel_manager.update_info(alias, f"get_detailVoteInfo failed: {e}")
+            return False
 
         try:
             response = self.get_daily()
