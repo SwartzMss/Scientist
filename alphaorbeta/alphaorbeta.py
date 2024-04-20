@@ -605,7 +605,11 @@ class alphaorbeta:
             bnb_win_and_claim_1_time = response['BNB_WIN_AND_CLAIM_1_TIME']['completed'] >= response['BNB_WIN_AND_CLAIM_1_TIME']['total']
             bnb_silver_criteria_airdrop = response['BNB_SILVER_CRITERIA_AIRDROP']['completed'] >= response['BNB_SILVER_CRITERIA_AIRDROP']['total']
             nft_sbt_silver = response['NFT_SBT_SILVER']['completed'] >= response['NFT_SBT_SILVER']['total']
-            excel_manager.update_info(alias, f"bnb_vote_5_times {bnb_vote_5_times} bnb_add_vote_1_time {bnb_add_vote_1_time} bnb_win_and_claim_1_time {bnb_win_and_claim_1_time} bnb_silver_criteria_airdrop {bnb_silver_criteria_airdrop} nft_sbt_silver {nft_sbt_silver}", "Task INFO")
+            excel_manager.update_info(alias, f" {bnb_vote_5_times} ", "bnb_vote_5_times")
+            excel_manager.update_info(alias, f" {bnb_add_vote_1_time} ", "bnb_add_vote_1_time")
+            excel_manager.update_info(alias, f" {bnb_win_and_claim_1_time} ", "bnb_win_and_claim_1_time")
+            excel_manager.update_info(alias, f" {bnb_silver_criteria_airdrop} ", "bnb_silver_criteria_airdrop")
+            excel_manager.update_info(alias, f" {nft_sbt_silver} ", "nft_sbt_silver")
             log_and_print(f"{alias} get_silverSbtCriteria successfully bnb_vote_5_times {bnb_vote_5_times} bnb_add_vote_1_time {bnb_add_vote_1_time} bnb_win_and_claim_1_time {bnb_win_and_claim_1_time} bnb_silver_criteria_airdrop {bnb_silver_criteria_airdrop} nft_sbt_silver {nft_sbt_silver}")
         except Exception as e:
             log_and_print(f"{alias} get_silverSbtCriteria failed: {e}")
