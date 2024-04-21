@@ -332,7 +332,7 @@ if __name__ == "__main__":
     excel_manager = excelWorker("MorphSwapGM", log_and_print)
     app = MorphSwapGM()
 
-    swap_eth_to_morph
+    #swap_eth_to_morph
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
@@ -342,7 +342,7 @@ if __name__ == "__main__":
 
     time.sleep(5)
 
-    # swap_eth_to_morph
+    # swap_usdt_to_morph
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         time.sleep(3)
