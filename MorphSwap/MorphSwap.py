@@ -219,7 +219,7 @@ class MorphSwapGM:
             self.QueueForApprovalResult.append((alias, private_key, None, amount))
             return
         __contract_addr = Web3.to_checksum_address("0x5F4c7D793D898e64eddd1fC82D27EcfB5F6e4596")
-        param = self.encodeABI_approve(amount)
+        param = self.encodeABI_approve(balance)
         MethodID="0x095ea7b3" 
         try:
             data = MethodID + param
@@ -332,7 +332,7 @@ if __name__ == "__main__":
     excel_manager = excelWorker("MorphSwapGM", log_and_print)
     app = MorphSwapGM()
 
-    # swap_eth_to_morph
+    swap_eth_to_morph
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")

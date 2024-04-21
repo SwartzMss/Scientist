@@ -159,6 +159,14 @@ class alphaorbeta:
         log_and_print(f"{self.alias} post_claim data:{data}")
         return data
 
+    def get_bnbSilverCriteriaAirdrop(self):
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/userQuest/bnbSilverCriteriaAirdrop/user/{self.userId}/claim"
+        response = self.session.get(url, headers=self.headers, timeout=20)
+        data = response.json()
+        log_and_print(f"{self.alias} get_bnbSilverCriteriaAirdrop data:{data}")
+        return data
+
+
     def get_votedTask(self):
         url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/vote/user/{self.userId}?chainId=204"
         response = self.session.get(url, headers=self.headers, timeout=20)
@@ -204,6 +212,12 @@ class alphaorbeta:
         log_and_print(f"{self.alias} post_userVote data:{data}")
         return data
 
+    def get_nftQuestauthorize(self):
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/userQuest/nftQuest/user/{self.userId}/silver/authorize"
+        response = self.session.get(url, headers=self.headers, timeout=20)
+        log_and_print(f"{self.alias} get_nftQuestauthorize data:{response}")
+        return response
+
 
     def get_silverSbtCriteria(self):
         url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/userQuest/silverSbtCriteria/user/{self.userId}"
@@ -229,6 +243,27 @@ class alphaorbeta:
         log_and_print(f"{self.alias} get_hasPoppedMembershipCard data:{data}")
         return data
 
+
+    def get_lastWeekAbChipsSpendSILVER(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0 or energy == 0:
+            return None
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/lastWeekAbChipsSpend/SILVER"
+        response = self.session.get(url, headers=self.headers, timeout=20)
+        data = response.json()
+        log_and_print(f"{self.alias} get_lastWeekAbChipsSpendSILVER data:{data}")
+        return data
+
+    def get_lastWeekAbChipsSpendSILVERWOOD(self):
+        run_or_not = random.randint(0, 1)  # 生成 0 或 1
+        if run_or_not == 0 or energy == 0:
+            return None
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/lastWeekAbChipsSpend/WOOD"
+        response = self.session.get(url, headers=self.headers, timeout=20)
+        data = response.json()
+        log_and_print(f"{self.alias} get_lastWeekAbChipsSpendSILVERWOOD data:{data}")
+        return data
+
     def check_transaction_status(self, tx_hash, timeout=300, interval=5):
         """检查交易的状态，返回是否确认和交易状态。使用计数器实现超时。"""
         max_attempts = timeout // interval  # 计算最大尝试次数
@@ -250,6 +285,38 @@ class alphaorbeta:
 
         # 超时后返回False，表示交易状态未知或未确认，状态为挂起
         return False, "pending"
+
+
+    def perform_mintStellar(self,signature):
+        log_and_print(f"{alias} perform_mintStellar ")
+        __contract_addr = Web3.to_checksum_address("0xf2b05c3faf117c5d8301e74253f1cb84271aaad7")
+        MethodID="0xf9286095"
+        param_1="0000000000000000000000000000000000000000000000000000000000000040"
+        param_2="00000000000000000000000000000000000000000000000000000000000000c0"
+        param_3="0000000000000000000000000000000000000000000000000000000000000041"
+        param_4=signature[2:66]
+        param_5=signature[66:130]
+        param_6_raw = signature[130:]  # 提取从130位置开始的所有字符
+        param_6 = param_6_raw.ljust(64, '0')
+        param_7="0000000000000000000000000000000000000000000000000000000000000006"
+        param_8="73696c7665720000000000000000000000000000000000000000000000000000"
+
+        try:
+            data = MethodID + param_1 + param_2 + param_3 + param_4 + param_5 + param_6 +  param_7 + param_8
+            gasprice = int(self.rpc.get_gas_price()['result'], 16) * 1.5
+            response = self.rpc.transfer(
+                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+            if 'error' in response:
+                raise Exception(f"action Error: {response}")
+            hasResult = response["result"]
+            txIsSucceed,msg = self.check_transaction_status(hasResult)
+            if  txIsSucceed != True:
+                raise Exception(f"check_transaction_status hasResult {hasResult} Error: {msg}")
+            return True,hasResult
+        except Exception as e:
+            log_and_print(f"{alias} perform_mintStellar  failed: {e}")
+            excel_manager.update_info(alias, f" perform_mintStellar failed: {e}")
+            return False,None
 
     def perform_claim(self,amount,voteContractAddress,createdAt,nonce,signature):
         log_and_print(f"{alias} perform_claim ")
@@ -337,6 +404,14 @@ class alphaorbeta:
             return False
 
         try:
+            response = self.get_profile()
+            response = self.get_hasPoppedMembershipCard()
+            #这不校验结果
+        except Exception as e:
+            pass
+
+
+        try:
             response = self.get_points()
             if 'error' in response:
                 raise Exception(f"Error: {response}")
@@ -403,6 +478,13 @@ class alphaorbeta:
             return False
 
         try:
+            response = self.get_lastWeekAbChipsSpendSILVER()
+            response = self.get_lastWeekAbChipsSpendSILVERWOOD()
+            #这不校验结果
+        except Exception as e:
+            pass   
+
+        try:
             response = self.get_votedTask()
             if 'error' in response:
                 raise Exception(f"Error: {response}")
@@ -466,6 +548,13 @@ class alphaorbeta:
                 result,hash = self.perform_voteForAbCHIPS(userVoteAmount,votedOptionId,voteContractAddress,createdAt,nonce,signature)
                 if  result == False:
                     return False
+
+                try:
+                    response = self.get_lastWeekAbChipsSpendSILVER()
+                    response = self.get_lastWeekAbChipsSpendSILVERWOOD()
+                    #这不校验结果
+                except Exception as e:
+                    pass   
 
                 try:
                     response = self.post_userVote(voteId,userVoteAmount,mockGameId,votedOptionId,hash)
@@ -556,6 +645,13 @@ class alphaorbeta:
             excel_manager.update_info(alias, f"get_unclaimedVoteTask failed: {e}")
             return False
 
+        try:
+            response = self.get_lastWeekAbChipsSpendSILVER()
+            response = self.get_lastWeekAbChipsSpendSILVERWOOD()
+            #这不校验结果
+        except Exception as e:
+            pass   
+
         for unclaimedVoteTask in unclaimedVoteTask_ids:
             try:
                 response = self.get_votedTaskInfo(unclaimedVoteTask)
@@ -603,8 +699,11 @@ class alphaorbeta:
             bnb_vote_5_times = response['BNB_VOTE_5_TIMES']['completed'] >= response['BNB_VOTE_5_TIMES']['total']
             bnb_add_vote_1_time = response['BNB_ADD_VOTE_1_TIME']['completed'] >= response['BNB_ADD_VOTE_1_TIME']['total']
             bnb_win_and_claim_1_time = response['BNB_WIN_AND_CLAIM_1_TIME']['completed'] >= response['BNB_WIN_AND_CLAIM_1_TIME']['total']
-            bnb_silver_criteria_airdrop = response['BNB_SILVER_CRITERIA_AIRDROP']['completed'] >= response['BNB_SILVER_CRITERIA_AIRDROP']['total']
-            nft_sbt_silver = response['NFT_SBT_SILVER']['completed'] >= response['NFT_SBT_SILVER']['total']
+            bnb_silver_criteria_airdrop = response['BNB_SILVER_CRITERIA_AIRDROP']['completed']
+            nft_sbt_silver = response['NFT_SBT_SILVER']['completed']
+            bnb_silver_criteria_airdrop_canClaim = response['BNB_SILVER_CRITERIA_AIRDROP']['canClaim'] and response['BNB_SILVER_CRITERIA_AIRDROP']['completed'] == 0
+            nft_sbt_silver_canClaim = response['NFT_SBT_SILVER']['canClaim'] and response['NFT_SBT_SILVER']['completed'] == 0
+
             excel_manager.update_info(alias, f" {bnb_vote_5_times} ", "bnb_vote_5_times")
             excel_manager.update_info(alias, f" {bnb_add_vote_1_time} ", "bnb_add_vote_1_time")
             excel_manager.update_info(alias, f" {bnb_win_and_claim_1_time} ", "bnb_win_and_claim_1_time")
@@ -616,6 +715,45 @@ class alphaorbeta:
             excel_manager.update_info(alias, f"get_silverSbtCriteria failed: {e}")
             return False
 
+        if bnb_silver_criteria_airdrop_canClaim == 1:
+            try:
+                response = self.get_bnbSilverCriteriaAirdrop()
+                if 'error' in response:
+                    raise Exception(f"Error: {response}")
+                log_and_print(f"{alias} get_bnbSilverCriteriaAirdrop successfully")
+            except Exception as e:
+                log_and_print(f"{alias} get_bnbSilverCriteriaAirdrop failed: {e}")
+                excel_manager.update_info(alias, f"get_bnbSilverCriteriaAirdrop failed: {e}")
+                return False       
+
+        try:
+            response = self.get_lastWeekAbChipsSpendSILVER()
+            response = self.get_lastWeekAbChipsSpendSILVERWOOD()
+            #这不校验结果
+        except Exception as e:
+            pass   
+
+        try:
+            response = self.get_profile()
+            response = self.get_hasPoppedMembershipCard()
+            #这不校验结果
+        except Exception as e:
+            pass
+
+        if nft_sbt_silver_canClaim == 1:
+            try:
+                response = self.get_nftQuestauthorize()
+                if 'error' in response:
+                    raise Exception(f"Error: {response.text}")
+                log_and_print(f"{alias} get_nftQuestauthorize successfully")
+            except Exception as e:
+                log_and_print(f"{alias} get_nftQuestauthorize failed: {e}")
+                excel_manager.update_info(alias, f"get_nftQuestauthorize failed: {e}")
+                return False  
+
+            result,hash = self.perform_mintStellar(response.text)
+            if  result == False:
+                return False
         try:
             response = self.get_points()
             if 'error' in response:
@@ -632,6 +770,28 @@ class alphaorbeta:
         except Exception as e:
             log_and_print(f"{alias} get_points failed: {e}")
             excel_manager.update_info(alias, f"get_points failed: {e}")
+            return False
+
+        try:
+            response = self.get_silverSbtCriteria()
+            if 'error' in response:
+                raise Exception(f"Error: {response}")
+            bnb_vote_5_times = response['BNB_VOTE_5_TIMES']['completed'] >= response['BNB_VOTE_5_TIMES']['total']
+            bnb_add_vote_1_time = response['BNB_ADD_VOTE_1_TIME']['completed'] >= response['BNB_ADD_VOTE_1_TIME']['total']
+            bnb_win_and_claim_1_time = response['BNB_WIN_AND_CLAIM_1_TIME']['completed'] >= response['BNB_WIN_AND_CLAIM_1_TIME']['total']
+            bnb_silver_criteria_airdrop = response['BNB_SILVER_CRITERIA_AIRDROP']['completed']
+            nft_sbt_silver = response['NFT_SBT_SILVER']['completed']
+            bnb_silver_criteria_airdrop_canClaim = response['BNB_SILVER_CRITERIA_AIRDROP']['canClaim']
+            nft_sbt_silver_canClaim = response['NFT_SBT_SILVER']['canClaim']
+            excel_manager.update_info(alias, f" {bnb_vote_5_times} ", "bnb_vote_5_times")
+            excel_manager.update_info(alias, f" {bnb_add_vote_1_time} ", "bnb_add_vote_1_time")
+            excel_manager.update_info(alias, f" {bnb_win_and_claim_1_time} ", "bnb_win_and_claim_1_time")
+            excel_manager.update_info(alias, f" {bnb_silver_criteria_airdrop} ", "bnb_silver_criteria_airdrop")
+            excel_manager.update_info(alias, f" {nft_sbt_silver} ", "nft_sbt_silver")
+            log_and_print(f"{alias} get_silverSbtCriteria successfully bnb_vote_5_times {bnb_vote_5_times} bnb_add_vote_1_time {bnb_add_vote_1_time} bnb_win_and_claim_1_time {bnb_win_and_claim_1_time} bnb_silver_criteria_airdrop {bnb_silver_criteria_airdrop} nft_sbt_silver {nft_sbt_silver}")
+        except Exception as e:
+            log_and_print(f"{alias} get_silverSbtCriteria failed: {e}")
+            excel_manager.update_info(alias, f"get_silverSbtCriteria failed: {e}")
             return False
 
 if __name__ == '__main__':
