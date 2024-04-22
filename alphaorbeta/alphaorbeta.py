@@ -498,7 +498,8 @@ class alphaorbeta:
         remaining_ids = list(set(endingSoonTask_ids) - set(votedTask_ids))
 
         # 检查remaining_ids是否不为空，然后随机选择一个
-        if remaining_ids:
+        run_or_not = random.randint(1, 3)
+        if run_or_not <= 2 and remaining_ids:
             voteId = random.choice(remaining_ids)
 
             try:
