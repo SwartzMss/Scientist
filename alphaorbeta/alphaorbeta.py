@@ -226,6 +226,14 @@ class alphaorbeta:
         log_and_print(f"{self.alias} get_silverSbtCriteria data:{data}")
         return data
 
+
+    def get_userReward(self):
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/userReward/summary/user/{self.userId}"
+        response = self.session.get(url, headers=self.headers, timeout=20)
+        data = response.json()
+        log_and_print(f"{self.alias} get_userReward voteIddata:{data}")
+        return data
+
     def get_detailVoteInfo(self,voteId):
         url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/vote/{voteId}/user/{self.userId}"
         response = self.session.get(url, headers=self.headers, timeout=20)
@@ -437,6 +445,27 @@ class alphaorbeta:
         except Exception as e:
             pass
 
+        try:
+            response = self.get_userReward()
+            if 'error' in response:
+                raise Exception(f"Error: {response}")
+            alpha_token_value = 0
+            beta_token_value = 0
+            for balance in response['rewards']:
+                total_balance = int(balance['total'])
+                decimal = balance['decimal']
+                if balance['reward'] == 'ALPHA_TOKEN':
+                    alpha_token_value = total_balance / (10 ** decimal)
+                elif balance['reward'] == 'BETA_TOKEN':
+                    beta_token_value = total_balance / (10 ** decimal)
+            excel_manager.update_info(alias, f" {alpha_token_value} ", "alpha_token_value")
+            excel_manager.update_info(alias, f" {beta_token_value} ", "beta_token_value")
+            log_and_print(f"{alias} get_userReward successfully  alpha_token_value {alpha_token_value} beta_token_value {beta_token_value}")
+        except Exception as e:
+            log_and_print(f"{alias} get_userReward failed: {e}")
+            excel_manager.update_info(alias, f"get_userReward failed: {e}")
+            return False
+
 
         try:
             response = self.get_daily()
@@ -500,94 +529,12 @@ class alphaorbeta:
         # 检查remaining_ids是否不为空，然后随机选择一个
         run_or_not = random.randint(1, 3)
         if run_or_not <= 2 and remaining_ids:
-            voteId = random.choice(remaining_ids)
+            # 随机决定要选择的任务数量，范围从1到remaining_ids的长度
+            num_to_select = random.randint(1, len(remaining_ids))
 
-            try:
-                response = self.get_detailVoteInfo(voteId)
-                if 'error' in response:
-                    raise Exception(f"Error: {response}")
-                option_states = response['voteGameState']['optionStates']
-                voteTitle = response['voteTitle']
-                max_voted_option = max(option_states, key=lambda x: x['totalVoted'])
-                max_voted_option_id = max_voted_option['optionId']
-                minVoteAmount = response['mockGame']["gameState"]["minVoteAmount"]
-                mockGameId = response['mockGame']["mockGameId"]
-                votedOptionId = max_voted_option_id
-                userVoteAmount = str(int(int(minVoteAmount) * 1.1))
-                voteContractAddress = response['voteContractAddress']
-                log_and_print(f"{alias} get_detailVoteInfo successfully max_voted_option_id {max_voted_option_id} voteTitle {voteTitle}")
-            except Exception as e:
-                log_and_print(f"{alias} get_detailVoteInfo failed: {e}")
-                excel_manager.update_info(alias, f"get_detailVoteInfo failed: {e}")
-                return False
-
-            try:
-                response = self.get_daily()
-                if 'error' in response:
-                    raise Exception(f"Error: {response}")
-                claimed_value = response['DAILY_CHECKIN']['claimed']
-                log_and_print(f"{alias} get_daily successfully claimed_value {claimed_value}")
-            except Exception as e:
-                log_and_print(f"{alias} get_daily failed: {e}")
-                excel_manager.update_info(alias, f"get_daily failed: {e}")
-                return False
-
-            if abCHIPS_value > int(userVoteAmount) /(10 ** decimal):
-                try:
-                    response = self.post_authorize(voteId,userVoteAmount,mockGameId,votedOptionId)
-                    if 'error' in response:
-                        raise Exception(f"Error: {response}")
-                    nonce = response["nonce"]
-                    createdAt = response["createdAt"]
-                    signature = response["signature"]
-                    log_and_print(f"{alias} post_authorize successfully")
-                except Exception as e:
-                    log_and_print(f"{alias} post_authorize failed: {e}")
-                    excel_manager.update_info(alias, f"post_authorize failed: {e}")
-                    return False
-                
-                result,hash = self.perform_voteForAbCHIPS(userVoteAmount,votedOptionId,voteContractAddress,createdAt,nonce,signature)
-                if  result == False:
-                    return False
-
-                try:
-                    response = self.get_lastWeekAbChipsSpendSILVER()
-                    response = self.get_lastWeekAbChipsSpendSILVERWOOD()
-                    #这不校验结果
-                except Exception as e:
-                    pass   
-
-                try:
-                    response = self.post_userVote(voteId,userVoteAmount,mockGameId,votedOptionId,hash)
-                    if 'error' in response:
-                        raise Exception(f"Error: {response}")
-                    log_and_print(f"{alias} post_userVote successfully")
-                except Exception as e:
-                    log_and_print(f"{alias} post_userVote failed: {e}")
-                    excel_manager.update_info(alias, f"post_userVote failed: {e}")
-                    return False
-
-            # 这边直接restake 一次随机的
-            run_or_not = random.randint(0, 1)  # 生成 0 或 1
-            if run_or_not == 1:        
-                log_and_print(f"{alias} so lucky need restake here")
-                try:
-                    response = self.get_points()
-                    if 'error' in response:
-                        raise Exception(f"Error: {response}")
-                    for balance in response:
-                        total_balance = int(balance['totalBalance'])
-                        decimal = balance['decimal']
-                        if balance['point'] == 'abETH':
-                            abETH_value = total_balance / (10 ** decimal)
-                        elif balance['point'] == 'abCHIPS':
-                            abCHIPS_value = total_balance / (10 ** decimal)
-                    log_and_print(f"{alias} get_points successfully  abETH_value {abETH_value} abCHIPS_value {abCHIPS_value}")
-                except Exception as e:
-                    log_and_print(f"{alias} get_points failed: {e}")
-                    excel_manager.update_info(alias, f"get_points failed: {e}")
-                    return False
-
+            # 随机选择num_to_select个任务
+            selected_ids = random.sample(remaining_ids, num_to_select)
+            for voteId in selected_ids:
                 try:
                     response = self.get_detailVoteInfo(voteId)
                     if 'error' in response:
@@ -605,6 +552,17 @@ class alphaorbeta:
                 except Exception as e:
                     log_and_print(f"{alias} get_detailVoteInfo failed: {e}")
                     excel_manager.update_info(alias, f"get_detailVoteInfo failed: {e}")
+                    return False
+
+                try:
+                    response = self.get_daily()
+                    if 'error' in response:
+                        raise Exception(f"Error: {response}")
+                    claimed_value = response['DAILY_CHECKIN']['claimed']
+                    log_and_print(f"{alias} get_daily successfully claimed_value {claimed_value}")
+                except Exception as e:
+                    log_and_print(f"{alias} get_daily failed: {e}")
+                    excel_manager.update_info(alias, f"get_daily failed: {e}")
                     return False
 
                 if abCHIPS_value > int(userVoteAmount) /(10 ** decimal):
@@ -626,6 +584,13 @@ class alphaorbeta:
                         return False
 
                     try:
+                        response = self.get_lastWeekAbChipsSpendSILVER()
+                        response = self.get_lastWeekAbChipsSpendSILVERWOOD()
+                        #这不校验结果
+                    except Exception as e:
+                        pass   
+
+                    try:
                         response = self.post_userVote(voteId,userVoteAmount,mockGameId,votedOptionId,hash)
                         if 'error' in response:
                             raise Exception(f"Error: {response}")
@@ -634,6 +599,85 @@ class alphaorbeta:
                         log_and_print(f"{alias} post_userVote failed: {e}")
                         excel_manager.update_info(alias, f"post_userVote failed: {e}")
                         return False
+
+                try:
+                    response = self.get_daily()
+                    if 'error' in response:
+                        raise Exception(f"Error: {response}")
+                    claimed_value = response['DAILY_CHECKIN']['claimed']
+                    log_and_print(f"{alias} get_daily successfully claimed_value {claimed_value}")
+                except Exception as e:
+                    log_and_print(f"{alias} get_daily failed: {e}")
+                    excel_manager.update_info(alias, f"get_daily failed: {e}")
+                    return False
+
+                # 这边直接restake 一次随机的
+                run_or_not = random.randint(0, 1)  # 生成 0 或 1
+                if run_or_not == 1:        
+                    log_and_print(f"{alias} so lucky need restake here")
+                    try:
+                        response = self.get_points()
+                        if 'error' in response:
+                            raise Exception(f"Error: {response}")
+                        for balance in response:
+                            total_balance = int(balance['totalBalance'])
+                            decimal = balance['decimal']
+                            if balance['point'] == 'abETH':
+                                abETH_value = total_balance / (10 ** decimal)
+                            elif balance['point'] == 'abCHIPS':
+                                abCHIPS_value = total_balance / (10 ** decimal)
+                        log_and_print(f"{alias} get_points successfully  abETH_value {abETH_value} abCHIPS_value {abCHIPS_value}")
+                    except Exception as e:
+                        log_and_print(f"{alias} get_points failed: {e}")
+                        excel_manager.update_info(alias, f"get_points failed: {e}")
+                        return False
+
+                    try:
+                        response = self.get_detailVoteInfo(voteId)
+                        if 'error' in response:
+                            raise Exception(f"Error: {response}")
+                        option_states = response['voteGameState']['optionStates']
+                        voteTitle = response['voteTitle']
+                        max_voted_option = max(option_states, key=lambda x: x['totalVoted'])
+                        max_voted_option_id = max_voted_option['optionId']
+                        minVoteAmount = response['mockGame']["gameState"]["minVoteAmount"]
+                        mockGameId = response['mockGame']["mockGameId"]
+                        votedOptionId = max_voted_option_id
+                        userVoteAmount = str(int(int(minVoteAmount) * 1.1))
+                        voteContractAddress = response['voteContractAddress']
+                        log_and_print(f"{alias} get_detailVoteInfo successfully max_voted_option_id {max_voted_option_id} voteTitle {voteTitle}")
+                    except Exception as e:
+                        log_and_print(f"{alias} get_detailVoteInfo failed: {e}")
+                        excel_manager.update_info(alias, f"get_detailVoteInfo failed: {e}")
+                        return False
+
+                    if abCHIPS_value > int(userVoteAmount) /(10 ** decimal):
+                        try:
+                            response = self.post_authorize(voteId,userVoteAmount,mockGameId,votedOptionId)
+                            if 'error' in response:
+                                raise Exception(f"Error: {response}")
+                            nonce = response["nonce"]
+                            createdAt = response["createdAt"]
+                            signature = response["signature"]
+                            log_and_print(f"{alias} post_authorize successfully")
+                        except Exception as e:
+                            log_and_print(f"{alias} post_authorize failed: {e}")
+                            excel_manager.update_info(alias, f"post_authorize failed: {e}")
+                            return False
+                        
+                        result,hash = self.perform_voteForAbCHIPS(userVoteAmount,votedOptionId,voteContractAddress,createdAt,nonce,signature)
+                        if  result == False:
+                            return False
+
+                        try:
+                            response = self.post_userVote(voteId,userVoteAmount,mockGameId,votedOptionId,hash)
+                            if 'error' in response:
+                                raise Exception(f"Error: {response}")
+                            log_and_print(f"{alias} post_userVote successfully")
+                        except Exception as e:
+                            log_and_print(f"{alias} post_userVote failed: {e}")
+                            excel_manager.update_info(alias, f"post_userVote failed: {e}")
+                            return False
 
         try:
             response = self.get_unclaimedVoteTask()
