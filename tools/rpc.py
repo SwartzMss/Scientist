@@ -76,10 +76,10 @@ class Rpc:
         for attempt in range(max_retries):
             try:
                 response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
-                data =  response.json()
-                if data and 'error' in data:
-                    raise Exception(f"Error: {response}")
-                return data
+                dataInfo =  response.json()
+                if dataInfo and 'error' in dataInfo:
+                    raise Exception(f"Error: {dataInfo}")
+                return dataInfo
             except Exception as e:
                 self.logger(f"Attempt {attempt+1} failed - get_gas_price Error: {e}")
                 time.sleep(2)
