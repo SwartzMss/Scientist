@@ -42,10 +42,9 @@ def log_and_print(text):
 
 class MorphWithDrawForMorp:
     def __init__(self, ):
-        self.alias = None
-        self.rpcForSepolia = Rpc(rpc_url="https://eth-sepolia-public.unifra.io", chain_id=11155111, logger = log_and_print)
+        self.rpcForSepolia = Rpc(rpc="https://eth-sepolia-public.unifra.io", chainid=11155111, logger = log_and_print)
         self.web3ForSepolia = Web3(Web3.HTTPProvider("https://eth-sepolia-public.unifra.io"))
-        self.rpcForMorphTest = Rpc(rpc_url="https://rpc-testnet.morphl2.io", chain_id=2710, logger = log_and_print)
+        self.rpcForMorphTest = Rpc(rpc="https://rpc-testnet.morphl2.io", chainid=2710, logger = log_and_print)
         self.web3ForMorphTest = Web3(Web3.HTTPProvider("https://rpc-testnet.morphl2.io"))
         self.gaslimit = 750000
         self.account = None
@@ -66,7 +65,7 @@ class MorphWithDrawForMorp:
         if balance_result == None:
             return None
         balance_wei = int(balance_result['result'], 16)
-        balance_bera = self.web3.from_wei(balance_wei, 'ether')
+        balance_bera = self.web3ForSepolia.from_wei(balance_wei, 'ether')
         return Decimal(balance_bera)
 
     def encodeABI_withdrawTo(self,amount):
@@ -106,14 +105,18 @@ class MorphWithDrawForMorp:
         return False, "pending"
 
     def withdrawTo_action(self,alias, private_key):
-        amount = round(random.uniform(0.001, 0.005), 3)
         self.account = self.web3ForMorphTest.eth.account.from_key(private_key) 
         balance = self.get_MorphTest_eth_balance()
-        log_and_print(f"alias {alias},amount= {amount} MorphTest_eth balance= {balance}")
-        if balance == None or balance < Decimal(amount):
-            log_and_print(f"alias {alias},withdrawTo_action too less balance skipped")
-            excel_manager.update_info(alias, f"too less MorphTest_eth balance->{balance} amount = {amount} skipped", "withdrawTo_action")
+        log_and_print(f"alias {alias}, MorphTest_eth balance= {balance}")
+
+        if balance is None or balance < Decimal('0.1'):
+            log_and_print(f"alias {alias}, balance too low, operation skipped")
+            excel_manager.update_info(alias, f"too less MorphTest_eth balance->{balance} skipped", "withdrawTo_action")
             return
+        else:
+            amount = round(balance / Decimal('10.0'), 3)
+            log_and_print(f"alias {alias}, amount= {amount} MorphTest_eth balance= {balance}")
+            # 进行其他相关的操作
         __contract_addr = Web3.to_checksum_address("0x4200000000000000000000000000000000000010")
         param = self.encodeABI_withdrawTo(amount)
         MethodID="0xa3a79548" 
@@ -178,9 +181,10 @@ if __name__ == "__main__":
         time.sleep(3)
         log_and_print(f"statring running by alias {alias}")
         private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
+        #private_key = "0x3ac2a9da02016f712051c87732e21cc7bf72fd18416b3d2a79fcb065bcea742c"
         app.withdrawTo_action(alias, private_key)
         
     app.check_all_transaction_for_withdrawTo()
-    app.batch_proveWithdrawalTransaction()
-    app.check_all_transaction_for_proveWithdrawalTransaction()
+    # app.batch_proveWithdrawalTransaction()
+    # app.check_all_transaction_for_proveWithdrawalTransaction()
     excel_manager.save_msg_and_stop_service()

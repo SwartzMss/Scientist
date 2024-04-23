@@ -168,7 +168,7 @@ class MorphSwapGM:
         return None
 
     def swap_eth_to_morph(self, alias, private_key):
-        amount = round(random.uniform(0.001, 0.005), 3)
+        amount = round(random.uniform(0.001, 0.009), 3)
         self.account = self.web3.eth.account.from_key(private_key) 
         balance = self.get_eth_balance()
         log_and_print(f"alias {alias},balance= {balance} amount= {amount}")

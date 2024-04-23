@@ -75,7 +75,7 @@ class MintChainSwapGM:
     def encodeABI_bridgeETHTo(self):
         encoded_data = encode(
             ["address", "uint32", "bytes"],
-            [self.account.address, 200000, b'']
+            [self.account.address, 200000, b'0x7375706572627269646765']
         )
         encoded_data_hex = encoded_data.hex()
         log_and_print(f"encodeABI_bridgeETHTo  = {encoded_data_hex}")
