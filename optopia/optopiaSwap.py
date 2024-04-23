@@ -224,18 +224,20 @@ if __name__ == "__main__":
     app = OptopiaSwap()
 
 
-    # alais_list = UserInfoApp.find_alias_by_path()
-    # for alias in alais_list:
-    #     log_and_print(f"statring running by alias {alias}")
-    #     private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
-    #     app.swap_eth_to_optopia(alias, private_key)
-    # app.check_all_transaction_for_SwapFromEthtoOptopia()
+    alais_list = UserInfoApp.find_alias_by_path()
+    for alias in alais_list:
+        log_and_print(f"statring running by alias {alias}")
+        private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
+        app.swap_eth_to_optopia(alias, private_key)
+        time.sleep(3)
+    app.check_all_transaction_for_SwapFromEthtoOptopia()
 
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
-        app.swap_optopia_to_eth(alias, private_key)
-    app.check_all_transaction_for_SwapFromOptopiatoEth()
+        app.swap_eth_to_optopia(alias, private_key)
+        time.sleep(3)
+    app.check_all_transaction_for_SwapFromEthtoOptopia()
 
     excel_manager.save_msg_and_stop_service()
