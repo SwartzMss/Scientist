@@ -529,8 +529,11 @@ class alphaorbeta:
         # 检查remaining_ids是否不为空，然后随机选择一个
         run_or_not = random.randint(1, 3)
         if run_or_not <= 2 and remaining_ids:
-            # 随机决定要选择的任务数量，范围从1到remaining_ids的长度
-            num_to_select = random.randint(1, len(remaining_ids))
+            # 如果abCHIPS_value小于30，最多选择一个任务，否则随机选择
+            if abCHIPS_value < 30:
+                num_to_select = 1
+            else:
+                num_to_select = random.randint(1, len(remaining_ids))
 
             # 随机选择num_to_select个任务
             selected_ids = random.sample(remaining_ids, num_to_select)
