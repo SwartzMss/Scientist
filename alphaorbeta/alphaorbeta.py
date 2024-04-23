@@ -478,7 +478,8 @@ class alphaorbeta:
             excel_manager.update_info(alias, f"get_daily failed: {e}")
             return False
 
-        if claimed_value == 0:
+        run_or_not = random.randint(0, 1)
+        if run_or_not and claimed_value == 0:
             try:
                 response = self.post_checkin()
                 if 'error' in response:
@@ -836,6 +837,17 @@ class alphaorbeta:
             log_and_print(f"{alias} get_points failed: {e}")
             excel_manager.update_info(alias, f"get_points failed: {e}")
             return False
+
+        if claimed_value == 0:
+            try:
+                response = self.post_checkin()
+                if 'error' in response:
+                    raise Exception(f"Error: {response}")
+                log_and_print(f"{alias} post_checkin successfully ")
+            except Exception as e:
+                log_and_print(f"{alias} post_checkin failed: {e}")
+                excel_manager.update_info(alias, f"post_checkin failed: {e}")
+                return False
 
         try:
             response = self.get_silverSbtCriteria()
