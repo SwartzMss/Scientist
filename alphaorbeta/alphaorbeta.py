@@ -565,6 +565,23 @@ class alphaorbeta:
                     excel_manager.update_info(alias, f"get_daily failed: {e}")
                     return False
 
+                try:
+                    response = self.get_points()
+                    if 'error' in response:
+                        raise Exception(f"Error: {response}")
+                    for balance in response:
+                        total_balance = int(balance['totalBalance'])
+                        decimal = balance['decimal']
+                        if balance['point'] == 'abETH':
+                            abETH_value = total_balance / (10 ** decimal)
+                        elif balance['point'] == 'abCHIPS':
+                            abCHIPS_value = total_balance / (10 ** decimal)
+                    log_and_print(f"{alias} get_points successfully  abETH_value {abETH_value} abCHIPS_value {abCHIPS_value}")
+                except Exception as e:
+                    log_and_print(f"{alias} get_points failed: {e}")
+                    excel_manager.update_info(alias, f"get_points failed: {e}")
+                    return False
+
                 if abCHIPS_value > int(userVoteAmount) /(10 ** decimal):
                     try:
                         response = self.post_authorize(voteId,userVoteAmount,mockGameId,votedOptionId)
