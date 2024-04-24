@@ -45,10 +45,8 @@ class OptopiaSwap:
     def __init__(self):
         self.alias = None
         self.rpcForSepolia = Rpc(rpc="https://eth-sepolia-public.unifra.io", chainid=11155111, logger = log_and_print)
-        self.gaslimitForSepolia = 1500000
         self.web3ForSepolia = Web3(Web3.HTTPProvider("https://eth-sepolia-public.unifra.io"))
         self.rpcForOptopia = Rpc(rpc="https://rpc-testnet.optopia.ai", chainid=62049, logger = log_and_print)
-        self.gaslimitForOptopia = 300000
         self.web3ForOptopia = Web3(Web3.HTTPProvider("https://rpc-testnet.optopia.ai"))
         self.account = None
         self.QueueForSwapFromEthtoOptopia = []
@@ -109,7 +107,7 @@ class OptopiaSwap:
             gasprice = int(response['result'], 16) * 2
             log_and_print(f"{alias} swap_optopia_to_eth gasprice = {gasprice}")
             response = self.rpcForOptopia.transfer(
-                self.account, __contract_addr, value, self.gaslimitForOptopia, gasprice, data=data)
+                self.account, __contract_addr, value, gasprice, data=data)
             log_and_print(f"{alias} swap_optopia_to_eth response = {response}")
             if 'error' in response:
                 raise Exception(f" transfer Error: {response}")
@@ -145,7 +143,7 @@ class OptopiaSwap:
             gasprice = int(response['result'], 16) * 2
             log_and_print(f"{alias} swap_eth_to_optopia gasprice = {gasprice}")
             response = self.rpcForSepolia.transfer(
-                self.account, __contract_addr, value, self.gaslimitForSepolia, gasprice, data=data)
+                self.account, __contract_addr, value, gasprice, data=data)
             log_and_print(f"{alias} swap_eth_to_optopia response = {response}")
             if 'error' in response:
                 raise Exception(f" transfer Error: {response}")
@@ -154,8 +152,8 @@ class OptopiaSwap:
             self.QueueForSwapFromEthtoOptopia.append((alias, hasResult))
 
         except Exception as e:
-            log_and_print(f"{alias} swap_optopia_to_eth failed: {e}")
-            excel_manager.update_info(alias, f" {e}", "swap_optopia_to_eth")
+            log_and_print(f"{alias} swap_eth_to_optopia failed: {e}")
+            excel_manager.update_info(alias, f" {e}", "swap_eth_to_optopia")
 
 
     def check_all_transaction_for_SwapFromOptopiatoEth(self):

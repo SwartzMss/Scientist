@@ -45,7 +45,6 @@ class MorphSwapGM:
     def __init__(self, rpc_url="https://eth-sepolia-public.unifra.io", chain_id=11155111):
         self.alias = None
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id, logger = log_and_print)
-        self.gaslimit = 750000
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = None
         self.QueueForApprovalResult = []
@@ -189,7 +188,7 @@ class MorphSwapGM:
             gasprice = int(response['result'], 16) * 2
             log_and_print(f"{alias} swap_eth_to_morph gasprice = {gasprice}")
             response = self.rpc.transfer(
-                self.account, __contract_addr, value, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, value, gasprice, data=data)
             log_and_print(f"{alias} swap_eth_to_morph response = {response}")
             if 'error' in response:
                 raise Exception(f" transfer Error: {response}")
@@ -229,7 +228,7 @@ class MorphSwapGM:
             gasprice = int(response['result'], 16) * 2
             log_and_print(f"{alias} approve_action gasprice = {gasprice}")
             response = self.rpc.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0, gasprice, data=data)
             log_and_print(f"{alias} approve_action response = {response}")
             if 'error' in response:
                 raise Exception(f"transfer Error: {response}")
@@ -262,7 +261,7 @@ class MorphSwapGM:
             gasprice = int(response['result'], 16) * 2
             log_and_print(f"{alias} swap_usdt_to_morph gasprice = {gasprice}")
             response = self.rpc.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0, gasprice, data=data)
             log_and_print(f"{alias} swap_usdt_to_morph response = {response}")
             if 'error' in response:
                 raise Exception(f"transfer Error: {response}")

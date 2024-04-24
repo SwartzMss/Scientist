@@ -47,7 +47,6 @@ class PumpxGM:
     def __init__(self):
         self.alias = None
         self.session = None
-        self.gaslimit = 200000
         self.account = None
         self.headers = {
             'Accept': 'application/json, text/plain, */*',

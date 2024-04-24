@@ -70,7 +70,6 @@ class GenomefiGM:
         self.QuestionPickerApp = QuestionPicker()
         self.alias = None
         self.session = None
-        self.gaslimit = 200000
         self.account = None
         self.captcha_client = YesCaptchaClient(logger = log_and_print,client_key = client_key)
         self.headers = {

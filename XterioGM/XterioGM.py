@@ -74,7 +74,6 @@ class XterioGM:
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.alias = None
         self.session = None
-        self.gaslimit = 200000
         self.account = None
         self.captcha_client = YesCaptchaClient(logger = log_and_print,client_key = client_key)
         self.headers = {
@@ -196,7 +195,7 @@ class XterioGM:
             data = MethodID + param
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
             response = self.rpc.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0, gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"action Error: {response}")
             hasResult = response["result"]
@@ -216,7 +215,7 @@ class XterioGM:
             data = MethodID
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
             response = self.rpc.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0, gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"action Error: {response}")
             hasResult = response["result"]
@@ -243,7 +242,7 @@ class XterioGM:
             data = MethodID + param
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 2
             response = self.rpc.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0,  gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"action Error: {response}")
             hasResult = response["result"]

@@ -203,7 +203,7 @@ class Rpc:
     
         # 尝试发送交易，最多重试max_retries次
         for attempt in range(max_retries):
-            nonce = self.get_transaction_nonce(account.address)
+            nonce = int(self.get_transaction_nonce(account.address)['result'], 16)
             if nonce is None:
                 self.logger("Failed to fetch nonce.")
                 return None
@@ -213,7 +213,7 @@ class Rpc:
                 'value': hex(amount),
                 'gasPrice': hex(gasprice),
                 'nonce': hex(nonce),
-                'chainId': self.chainid,  # 确保包含chainId
+                'chainId': hex(self.chainid) if isinstance(self.chainid, int) else self.chainid,
                 'data': kw.get('data', '0x')
             }
             gaslimit = self.get_gaslimit(transaction)  # 自动获取gaslimit

@@ -43,7 +43,6 @@ class GenomefiBalance:
     def __init__(self, rpc_url="https://rpc-mainnet.maticvigil.com", chain_id=137):
         self.alias = None
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id, logger = log_and_print)
-        self.gaslimit = 750000
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.account = None
         self.headers = {

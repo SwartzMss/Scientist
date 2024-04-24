@@ -46,7 +46,6 @@ class MintChainSwapGM:
         self.web3ForSepolia = Web3(Web3.HTTPProvider("https://eth-sepolia-public.unifra.io"))
         self.rpcForMintChain = Rpc(rpc="sepolia-testnet-rpc.mintchain.io", chainid=1687, logger = log_and_print)
         self.web3ForMintChain = Web3(Web3.HTTPProvider("sepolia-testnet-rpc.mintchain.io"))
-        self.gaslimit = 750000
         self.account = None
         self.QueueForSwapFromEthtoMint = []
         self.headers = {
@@ -104,7 +103,7 @@ class MintChainSwapGM:
             gasprice = int(response['result'], 16) * 2
             log_and_print(f"{alias} swap_eth_to_mint gasprice = {gasprice}")
             response = self.rpcForSepolia.transfer(
-                self.account, __contract_addr, value, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, value, gasprice, data=data)
             log_and_print(f"{alias} swap_eth_to_mint response = {response}")
             if 'error' in response:
                 raise Exception(f" transfer Error: {response}")

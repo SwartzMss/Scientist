@@ -50,8 +50,9 @@ class alphaorbeta:
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id)
         self.alias = None
         self.account = None
+        self.votedNum = 0
+        self.claimedNum = 0
         self.session = None
-        self.gaslimit = 400000
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.userId = None
         self.headers = {
@@ -313,7 +314,7 @@ class alphaorbeta:
             data = MethodID + param_1 + param_2 + param_3 + param_4 + param_5 + param_6 +  param_7 + param_8
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 1.5
             response = self.rpc.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0, gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"action Error: {response}")
             hasResult = response["result"]
@@ -344,7 +345,7 @@ class alphaorbeta:
             data = MethodID + param_1 + param_2 + param_3 + param_4 + param_5 + param_6 +  param_7 + param_8 + param_9
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 1.5
             response = self.rpc.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0, gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"action Error: {response}")
             hasResult = response["result"]
@@ -378,7 +379,7 @@ class alphaorbeta:
             data = MethodID + param_1 + param_2 + param_3 + param_4 + param_5 + param_6 +  param_7 + param_8 + param_9 + param_10 + param_11
             gasprice = int(self.rpc.get_gas_price()['result'], 16) * 1.5
             response = self.rpc.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0, gasprice, data=data)
             if 'error' in response:
                 raise Exception(f"action Error: {response}")
             hasResult = response["result"]
@@ -395,6 +396,8 @@ class alphaorbeta:
         self.alias = alias
         self.account = account
         self.userId = None
+        self.votedNum = 0
+        self.claimedNum = 0
         self.create_new_session(proxyinfo)
 
         try:
@@ -550,6 +553,7 @@ class alphaorbeta:
             # 随机选择num_to_select个任务
             selected_ids = random.sample(remaining_ids, num_to_select)
             for voteId in selected_ids:
+                self.votedNum = self.votedNum + 1
                 try:
                     response = self.get_detailVoteInfo(voteId)
                     if 'error' in response:
@@ -711,6 +715,7 @@ class alphaorbeta:
                             excel_manager.update_info(alias, f"post_userVote failed: {e}")
                             return False
 
+        excel_manager.update_info(alias, f"{self.votedNum}", "votedNum")
         try:
             response = self.get_unclaimedVoteTask()
             if 'error' in response:
@@ -730,6 +735,7 @@ class alphaorbeta:
             pass   
 
         for unclaimedVoteTask in unclaimedVoteTask_ids:
+            self.claimedNum = self.claimedNum + 1
             try:
                 response = self.get_votedTaskInfo(unclaimedVoteTask)
                 if 'error' in response:
@@ -769,6 +775,7 @@ class alphaorbeta:
                 excel_manager.update_info(alias, f"post_claim failed: {e}")
                 return False
 
+        excel_manager.update_info(alias, f"{self.claimedNum}", "claimedNum")
         try:
             response = self.get_silverSbtCriteria()
             if 'error' in response:

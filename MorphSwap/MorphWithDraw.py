@@ -46,7 +46,6 @@ class MorphWithDrawForMorp:
         self.web3ForSepolia = Web3(Web3.HTTPProvider("https://eth-sepolia-public.unifra.io"))
         self.rpcForMorphTest = Rpc(rpc="https://rpc-testnet.morphl2.io", chainid=2710, logger = log_and_print)
         self.web3ForMorphTest = Web3(Web3.HTTPProvider("https://rpc-testnet.morphl2.io"))
-        self.gaslimit = 750000
         self.account = None
         self.QueueForwithdrawTo = []
         self.QueueForproveWithdrawalTransaction = []
@@ -128,7 +127,7 @@ class MorphWithDrawForMorp:
             gasprice = int(response['result'], 16) * 2
             log_and_print(f"{alias} withdrawTo_action gasprice = {gasprice}")
             response = self.rpcForMorphTest.transfer(
-                self.account, __contract_addr, 0, self.gaslimit, gasprice, data=data)
+                self.account, __contract_addr, 0, gasprice, data=data)
             log_and_print(f"{alias} withdrawTo_action response = {response}")
             if 'error' in response:
                 raise Exception(f"transfer Error: {response}")
