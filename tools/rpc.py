@@ -57,6 +57,31 @@ class Rpc:
             # 处理错误，例如重试或返回默认值
             return None
 
+    def get_gaslimit(self, transaction):
+        """估算交易所需的gas量，带重试逻辑"""
+        data = {
+            "jsonrpc": "2.0",
+            "method": "eth_estimateGas",
+            "params": [transaction],
+            "id": 1
+        }
+        max_retries = 5  # 设置最大重试次数
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+                res_data = response.json()
+                if res_data and 'error' not in res_data:
+                    return int(res_data['result'], 16)  # 正常情况下返回结果
+                elif res_data and 'error' in res_data:
+                    raise Exception(f"Error: {res_data['error']}")  # 抛出异常以处理错误
+            except Exception as e:
+                self.logger(f"Attempt {attempt + 1} failed - estimate_gas Error: {e}")
+                time.sleep(2)  # 发生异常时暂停2秒
+    
+        # 所有尝试失败后记录错误并返回None
+        self.logger("Failed to estimate gas after several attempts.")
+        return None
+    
     def get_transaction(self, txhash):
         """获取的交易详情"""
         data = {"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":[txhash],"id":1}
