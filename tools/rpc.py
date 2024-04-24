@@ -179,7 +179,7 @@ class Rpc:
             # 处理错误，例如重试或返回默认值
             return None
 
-    def transfer(self, account, to, amount, gasprice=None, max_retries=3, **kw):
+    def transfer(self, account, to, amount, gaslimit, gasprice=None, max_retries=3, **kw):
         """执行转账交易
         参数：
         account: 发送方账户
