@@ -492,23 +492,23 @@ class alphaorbeta:
                 log_and_print(f"{alias} post_checkin failed: {e}")
                 excel_manager.update_info(alias, f"post_checkin failed: {e}")
                 return False
-        try:
-            response = self.get_profile()
-            response = self.get_hasPoppedMembershipCard()
-            #这不校验结果
-        except Exception as e:
-            pass
+            try:
+                response = self.get_profile()
+                response = self.get_hasPoppedMembershipCard()
+                #这不校验结果
+            except Exception as e:
+                pass
 
-        try:
-            response = self.get_daily()
-            if 'error' in response:
-                raise Exception(f"Error: {response}")
-            claimed_value = response['DAILY_CHECKIN']['claimed']
-            log_and_print(f"{alias} get_daily successfully claimed_value {claimed_value}")
-        except Exception as e:
-            log_and_print(f"{alias} get_daily failed: {e}")
-            excel_manager.update_info(alias, f"get_daily failed: {e}")
-            return False
+            try:
+                response = self.get_daily()
+                if 'error' in response:
+                    raise Exception(f"Error: {response}")
+                claimed_value = response['DAILY_CHECKIN']['claimed']
+                log_and_print(f"{alias} get_daily successfully claimed_value {claimed_value}")
+            except Exception as e:
+                log_and_print(f"{alias} get_daily failed: {e}")
+                excel_manager.update_info(alias, f"get_daily failed: {e}")
+                return False
 
         try:
             response = self.get_endingSoonTask()
