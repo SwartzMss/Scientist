@@ -220,7 +220,7 @@ class Rpc:
             if gaslimit is None:
                 self.logger("Failed to estimate gas limit.")
                 continue
-            gaslimit =  int(gaslimit * 1.2)
+            gaslimit =  int(gaslimit * 1.3)
             transaction['gas'] = hex(gaslimit)
             transaction.update(kw)
     
