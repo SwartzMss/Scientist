@@ -53,6 +53,18 @@ class YesCaptchaClient:
                 time.sleep(6)
 
 
+    def get_recaptcha_token_by_TurnstileTaskProxyless(self, website_url, website_key, task_type):
+        task_response = self.create_task(website_url, website_key, task_type)
+        if 'taskId' in task_response:
+            task_id = task_response['taskId']
+            result = self.get_task_result(task_id)
+            if result and 'solution' in result and 'gRecaptchaResponse' in result['solution']:
+                return result['solution']['gRecaptchaResponse']
+            else:
+                raise Exception(f"人机验证失败")
+        else:
+            raise Exception("Failed to create captcha task")
+
     def get_recaptcha_token(self, website_url, website_key, task_type):
         task_response = self.create_task(website_url, website_key, task_type)
         if 'taskId' in task_response:

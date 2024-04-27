@@ -64,10 +64,10 @@ class AnalogDCFaucet:
         }
 
 
-    def create_new_session(self,proxyinfo):
+    def create_new_session(self,token,proxyinfo):
         ua = UserAgent()
         self.headers['user-agent'] = ua.random
-        self.headers.pop('Authorization', None)
+        self.headers['Authorization'] = token
         self.session = requests.Session()
         self.session.cookies.clear()
         self.session.proxies = proxyinfo
@@ -88,7 +88,6 @@ class AnalogDCFaucet:
         return o(current_millis)
 
     def faucet(self, address):
-        self.headers['authorization'] = "MTA3MDg4MTcyNTI1MDU0MzYyNg.GJFIQN.pM1qVW_CQ1Wv9VAMYRji2Bg-47Iwl8z8jSce9g"
         url = f"https://discord.com/api/v9/channels/1139090696175886376/messages"
         payload ={
             "content":  f"!faucet {address}",
@@ -97,16 +96,22 @@ class AnalogDCFaucet:
             "nonce": self.generate_nonce(),
             "tts": False
         }
-        response = self.session.post(
-            url, headers=self.headers,json=payload, timeout=60)
-        data = response.json()
-        log_and_print(f"{self.alias} post_login data:{data}")
-        return data
+        try:
+            response = self.session.post(
+                url, headers=self.headers,json=payload, timeout=60)
+            data = response.json()
+            log_and_print(f"{self.alias} post_login data:{data}")
+            return True
+        except Exception as e:
+            log_and_print(f"Error: {e}")
+            return False
 
-    def run(self,alias, address,proxyinfo):
+
+    def run(self,alias, address,token, proxyinfo):
         self.alias = alias
-        self.create_new_session(proxyinfo)
-        self.faucet(address)
+        self.create_new_session(token, proxyinfo)
+        result = self.faucet(address)
+        excel_manager.update_info(alias, f"{result}")
 
 
 if __name__ == '__main__':
@@ -128,5 +133,8 @@ if __name__ == '__main__':
             log_and_print(f"change_proxy_until_success failed {alias}")
             excel_manager.update_info(alias, f"change_proxy_until_success failed")
             continue
-        address = "an95DuPTMzfvWCv4Nv4BJjNp3bu9JTM56KBjiebaJZ5qrS2xb"
-        app.run(alias, address, proxyinfo)
+        address = UserInfoApp.find_analoginfo_by_alias_in_file(alias)
+        token = UserInfoApp.find_dcinfo_by_alias_in_file(alias)
+        app.run(alias, address, token,proxyinfo)
+
+    excel_manager.save_msg_and_stop_service()  

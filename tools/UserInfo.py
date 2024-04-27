@@ -13,6 +13,8 @@ emailfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_email
 ethfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_eth.json'
 solfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_sol.json'
 appfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_app.json'
+dcfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_dc.json'
+analogfile_path = rf'\\192.168.3.142\SuperWind\Study\account_config\account_analog.json'
 default_account_path = rf'\\192.168.3.142\SuperWind\Study\account_config\default_account.json'
 
 def simplePrint(text):
@@ -135,7 +137,6 @@ class UserInfo:
             self.logger(f"File {solfile_path} not found")
         return None
 
-    
     def find_ethinfo_by_alias_in_file(self, alias):
         try:
             with open(ethfile_path, 'r', encoding='utf-8') as file:
@@ -152,6 +153,43 @@ class UserInfo:
             self.logger(f"File {ethfile_path}  Missing key in JSON data: {e}")
         except FileNotFoundError:
             self.logger(f"File {ethfile_path} not found")
+        return None    
+
+    
+    def find_analoginfo_by_alias_in_file(self, alias):
+        try:
+            with open(analogfile_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+
+            for user in data.get("users", []):
+                if user['alias'] == alias:
+                    eth_info = user['eth']
+                    return eth_info['key']
+
+        except json.JSONDecodeError:
+            self.logger(f"File {analogfile_path}  Invalid JSON data")
+        except KeyError as e:
+            self.logger(f"File {analogfile_path}  Missing key in JSON data: {e}")
+        except FileNotFoundError:
+            self.logger(f"File {analogfile_path} not found")
+        return None
+
+    def find_dcinfo_by_alias_in_file(self, alias):
+        try:
+            with open(dcfile_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+
+            for user in data.get("users", []):
+                if user['alias'] == alias:
+                    eth_info = user['token']
+                    return eth_info['key']
+
+        except json.JSONDecodeError:
+            self.logger(f"File {dcfile_path}  Invalid JSON data")
+        except KeyError as e:
+            self.logger(f"File {dcfile_path}  Missing key in JSON data: {e}")
+        except FileNotFoundError:
+            self.logger(f"File {dcfile_path} not found")
         return None
 
     def find_appinfo_by_alias_in_file(self, alias):
