@@ -139,7 +139,7 @@ class ReholdGM:
         url = f"https://app.rehold.io/api/v1/points/claim"
         payload = {
             "recaptchaResponse":recaptchaResponse,
-            "recaptchaVersion":2
+            "recaptchaType":"turnstile"
         }
         response = self.session.post(url, headers=self.headers, json=payload, timeout=10)
         log_and_print(f"{self.alias} post_claim status_code :{response.status_code }")
@@ -195,9 +195,9 @@ class ReholdGM:
 
         try:
             website_url = 'https://app.rehold.io/'
-            website_key = '6LeJVIspAAAAANYWYZipKwVmwwc1i8s81-Slkv40'
-            task_type = 'NoCaptchaTaskProxyless'
-            recaptcha_token = self.captcha_client.get_recaptcha_token(website_url, website_key, task_type)
+            website_key = '0x4AAAAAAAVz4bcj5K56cYD4'
+            task_type = 'TurnstileTaskProxyless'
+            recaptcha_token = self.captcha_client.get_recaptcha_token_by_TurnstileTaskProxyless(website_url, website_key, task_type)
             log_and_print(f"{alias} get_recaptcha_token successfully ")
         except Exception as e:
             log_and_print(f"{alias} get_recaptcha_token failed: {e}")
@@ -235,6 +235,7 @@ class ReholdGM:
                 raise Exception(f"Error: {response}")
             log_and_print(f"{alias} get_points successfully ")
             balance = response["balance"]
+            excel_manager.update_info(alias, f"balance: {balance} claimed")
         except Exception as e:
             log_and_print(f"{alias} get_points failed: {e}")
             excel_manager.update_info(alias, f"get_points failed: {e}")

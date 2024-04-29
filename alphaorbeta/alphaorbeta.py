@@ -13,7 +13,8 @@ from fake_useragent import UserAgent
 import os
 from dotenv import load_dotenv
 load_dotenv()
-
+from bs4 import BeautifulSoup
+import json
 # 获取当前脚本的绝对路径
 script_dir = os.path.dirname(os.path.abspath(__file__))
 # 获取当前脚本的父目录
@@ -27,7 +28,7 @@ from tools.rpc import Rpc
 from tools.socket5SwitchProxy import socket5SwitchProxy
 # 现在可以从tools目录导入excelWorker
 from tools.excelWorker import excelWorker
-
+from tools.captchaClient import captchaClient
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
@@ -52,6 +53,7 @@ class alphaorbeta:
         self.account = None
         self.votedNum = 0
         self.claimedNum = 0
+        self.captcha_client = captchaClient(logger = log_and_print,client_key = client_key)
         self.session = None
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.userId = None
@@ -86,6 +88,44 @@ class alphaorbeta:
         res = self.account.sign_message(encode_defunct(text=message))
         return res.signature.hex()
 
+    def extract_goku_props(self,html_content):
+        from bs4 import BeautifulSoup
+        import json
+
+        # 使用BeautifulSoup解析HTML
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        # 找到含有'window.gokuProps'的<script>标签
+        script_tag = soup.find('script', string=lambda text: 'window.gokuProps' in text if text else False)
+        script_content = script_tag.string
+
+        # 提取JSON字符串
+        start_index = script_content.find('{')
+        end_index = script_content.rfind('}') + 1
+        json_str = script_content[start_index:end_index]
+
+        # 将JSON字符串转换为Python字典
+        data = json.loads(json_str)
+
+        # 返回提取的数据
+        return data['key'], data['iv'], data['context']
+
+
+    def extract_script_urls(self,html_content):
+        from bs4 import BeautifulSoup
+
+        # 使用BeautifulSoup解析HTML
+        soup = BeautifulSoup(html_content, 'html.parser')
+
+        # 查找包含特定文件名的<script>标签
+        challenge_script_tag = soup.find('script', {'src': lambda src: 'challenge.js' in src if src else False})
+        captcha_script_tag = soup.find('script', {'src': lambda src: 'captcha.js' in src if src else False})
+
+        # 获取这些<script>标签的src属性值
+        challenge_script_url = challenge_script_tag['src'] if challenge_script_tag else "Challenge script not found"
+        captcha_script_url = captcha_script_tag['src'] if captcha_script_tag else "Captcha script not found"
+
+        return challenge_script_url, captcha_script_url
 
     def put_signInOrSignUpByWallet(self,signature):
         url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/signInOrSignUpByWallet"
@@ -97,15 +137,21 @@ class alphaorbeta:
         }
         response = self.session.put(
             url, headers=self.headers,json=payload, timeout=120)
-        data = response.json()
-        log_and_print(f"{self.alias}post_signInOrSignUpByWallet data:{data}")
-        return data
+        log_and_print(f"{self.alias} post_signInOrSignUpByWallet status_code :{response.status_code }")
+        return response
 
     def get_daily(self):
         url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/userQuest/user/{self.userId}/daily"
         response = self.session.get(url, headers=self.headers, timeout=20)
         data = response.json()
         log_and_print(f"{self.alias} get_daily data:{data}")
+        return data
+
+    def post_checkin(self):
+        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/userQuest/checkin/user/{self.userId}/complete?version=v2"
+        response = self.session.post(url, headers=self.headers, timeout=20)
+        data = response.json()
+        log_and_print(f"{self.alias} post_checkin data:{data}")
         return data
 
     def post_checkin(self):
@@ -392,6 +438,22 @@ class alphaorbeta:
             excel_manager.update_info(alias, f" perform_voteForAbCHIPS failed: {e}")
             return False,None
 
+    def extract_proxy_details(self,proxy_string):
+        from urllib.parse import urlparse
+        # 从字典中提取任一URL
+        url = next(iter(proxy_string.values()))
+
+        # 使用 urllib.parse.urlparse 解析代理URL字符串
+        parsed = urlparse(url)
+        
+        # 提取并返回代理信息
+        proxy_address = parsed.hostname
+        proxy_port = parsed.port
+        proxy_login = parsed.username
+        proxy_password = parsed.password
+
+        return proxy_address, proxy_port, proxy_login, proxy_password
+
     def run(self,alias, account,proxyinfo):
         self.alias = alias
         self.account = account
@@ -403,11 +465,21 @@ class alphaorbeta:
         try:
             signature = self.signature()
             response = self.put_signInOrSignUpByWallet(signature)
-            if 'error' in response:
+            if response.status_code != 405 and response.status_code != 200:
                 raise Exception(f"Error: {response}")
+            if response.status_code == 405:
+                key, iv, context = self.extract_goku_props(response.text)
+                proxyAddress, proxyPort, proxyLogin, proxyPassword = self.extract_proxy_details(proxyinfo)
+                challenge_script_url, captcha_script_url = self.extract_script_urls(response.text)
+                token1 = self.captcha_client.get_recaptcha_token(challenge_script_url, captcha_script_url, key,context,iv,proxyAddress,proxyPort,proxyLogin,proxyPassword)
+                self.headers['Authorization'] = 'Bearer ' + token1
+                response = self.put_signInOrSignUpByWallet(signature)
+                if response.status_code != 200:
+                    raise Exception(f"Error: {response}")
+            response = response.json()
             token = response["jwt"]
             self.userId = response["userId"]
-            self.headers['authorization'] = 'Bearer ' + token
+            self.headers['Authorization'] = 'Bearer ' + token
             log_and_print(f"{alias} post_signInOrSignUpByWallet successfully ")
         except Exception as e:
             log_and_print(f"{alias} post_signInOrSignUpByWallet failed: {e}")
@@ -919,11 +991,13 @@ class alphaorbeta:
             return False
 
 if __name__ == '__main__':
+    UserInfoApp = UserInfo(log_and_print)
+    client_key = UserInfoApp.find_2Captch_clientkey()
     app = alphaorbeta()
     retry_list = []
     failed_list = []
     proxyApp = socket5SwitchProxy(logger = log_and_print)
-    UserInfoApp = UserInfo(log_and_print)
+
     excel_manager = excelWorker("alphaorbeta", log_and_print)
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:

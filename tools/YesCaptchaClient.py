@@ -58,8 +58,8 @@ class YesCaptchaClient:
         if 'taskId' in task_response:
             task_id = task_response['taskId']
             result = self.get_task_result(task_id)
-            if result and 'solution' in result and 'gRecaptchaResponse' in result['solution']:
-                return result['solution']['gRecaptchaResponse']
+            if result and 'solution' in result and 'token' in result['solution']:
+                return result['solution']['token']
             else:
                 raise Exception(f"人机验证失败")
         else:
