@@ -189,7 +189,7 @@ class MidleGM:
             if 'error' in response:
                 raise Exception(f"Error: {response}")
             log_and_print(f"{alias} get_active successfully ")
-            claims = response['claims']
+            isAvailableToday = response['isAvailableToday']
         except Exception as e:
             log_and_print(f"{alias} get_active failed: {e}")
             excel_manager.update_info(alias, f"get_active failed: {e}")
@@ -214,8 +214,8 @@ class MidleGM:
         except Exception as e:
             pass
 
-        if claims == True:
-            excel_manager.update_info(alias, f"currentXp {currentXp} claims {claims} currentTicket {currentTicket}")
+        if isAvailableToday == False:
+            excel_manager.update_info(alias, f"currentXp {currentXp} isAvailableToday {isAvailableToday} currentTicket {currentTicket}")
             return True
 
         try:
@@ -233,7 +233,7 @@ class MidleGM:
             if 'error' in response:
                 raise Exception(f"Error: {response}")
             log_and_print(f"{alias} get_active successfully ")
-            claims = response['claims']
+            isAvailableToday = response['isAvailableToday']
         except Exception as e:
             log_and_print(f"{alias} get_active failed: {e}")
             excel_manager.update_info(alias, f"get_active failed: {e}")
@@ -251,7 +251,7 @@ class MidleGM:
             excel_manager.update_info(alias, f"get_self failed: {e}")
             return False
 
-        excel_manager.update_info(alias, f"currentXp {currentXp} claims {claims} currentTicket{currentTicket}")
+        excel_manager.update_info(alias, f"currentXp {currentXp} isAvailableToday {isAvailableToday} currentTicket {currentTicket}")
 
 
         try:

@@ -248,7 +248,7 @@ if __name__ == '__main__':
     app = ReholdGM()
     retry_list = []
     failed_list = []
-    
+
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
