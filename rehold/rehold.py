@@ -8,6 +8,8 @@ import web3
 import random
 import urllib
 import sys
+import datetime
+import pytz
 import secrets
 import requests
 import datetime
@@ -135,15 +137,20 @@ class ReholdGM:
         # 检查当前时间是否达到或超过目标时间
         return current_time >= target_time
 
-    def post_claim(self,recaptchaResponse):
-        url = f"https://app.rehold.io/api/v1/points/claim"
-        payload = {
-            "recaptchaResponse":recaptchaResponse,
-            "recaptchaType":"turnstile"
-        }
-        response = self.session.post(url, headers=self.headers, json=payload, timeout=10)
-        log_and_print(f"{self.alias} post_claim status_code :{response.status_code }")
-        return response
+    def has_time_arrived(self, time_str):
+        # 获取当前时间
+        current_time = datetime.datetime.now(pytz.timezone('Asia/Shanghai'))
+
+        # 提供的时间字符串
+        # 将字符串转换为datetime对象，并设定为UTC时区
+        target_time = datetime.datetime.strptime(time_str, "%Y-%m-%dT%H:%M:%S.%fZ")
+        target_time = target_time.replace(tzinfo=pytz.utc)
+
+        # 将目标时间从UTC转换为UTC+8
+        target_time = target_time.astimezone(pytz.timezone('Asia/Shanghai'))
+
+        # 检查当前时间是否达到或超过目标时间
+        return current_time >= target_time
 
     def run(self,alias, account,proxyinfo):
         self.create_new_session(proxyinfo)

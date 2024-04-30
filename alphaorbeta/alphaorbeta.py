@@ -28,7 +28,7 @@ from tools.rpc import Rpc
 from tools.socket5SwitchProxy import socket5SwitchProxy
 # 现在可以从tools目录导入excelWorker
 from tools.excelWorker import excelWorker
-from tools.captchaClient import captchaClient
+from tools.capmonster import capmonster
 # 获取当前时间并格式化为字符串
 current_time = datetime.datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
 # 构建新的日志文件路径，包含当前时间
@@ -53,24 +53,20 @@ class alphaorbeta:
         self.account = None
         self.votedNum = 0
         self.claimedNum = 0
-        self.captcha_client = captchaClient(logger = log_and_print,client_key = client_key)
+        self.captcha_client = capmonster(logger = log_and_print,client_key = client_key)
         self.session = None
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
         self.userId = None
         self.headers = {
-            'user-agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
             'Accept': 'application/json, text/plain, */*',
             'Accept-Language': 'zh-CN,zh;q=0.9',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
             'Content-Type': 'application/json',
-            'Pragma': 'no-cache',
+            'Sec-Ch-Ua':'"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+            'Sec-Ch-Ua-Mobile':"?0",
+            'Sec-Ch-Ua-Platform': "Windows",
             'Sec-Fetch-Dest': 'empty',
             'Sec-Fetch-Mode': 'cors',
             'Sec-Fetch-Site': 'cross-site',
-            'sec-ch-ua': '"Google Chrome";v="117", "Not;A=Brand";v="8", "Chromium";v="117"',
-            'sec-ch-ua-mobile': '?0',
-            'sec-ch-ua-platform': '"Windows"',
             'referer': 'https://app.alphaorbeta.com/',
             'origin': 'https://app.alphaorbeta.com', 
         }
@@ -78,7 +74,9 @@ class alphaorbeta:
     def create_new_session(self,proxyinfo):
         ua = UserAgent()
         self.headers['user-agent'] = ua.random
+        self.headers['user-agent'] = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36"
         self.headers.pop('Authorization', None)
+        self.headers.pop('X-Aws-Waf-Token', None)
         self.session = requests.Session()
         self.session.cookies.clear()
         self.session.proxies = proxyinfo
@@ -137,7 +135,7 @@ class alphaorbeta:
         }
         response = self.session.put(
             url, headers=self.headers,json=payload, timeout=120)
-        log_and_print(f"{self.alias} post_signInOrSignUpByWallet status_code :{response.status_code }")
+        log_and_print(f"{self.alias} put_signInOrSignUpByWallet status_code :{response.status_code }")
         return response
 
     def get_daily(self):
@@ -147,11 +145,15 @@ class alphaorbeta:
         log_and_print(f"{self.alias} get_daily data:{data}")
         return data
 
-    def post_checkin(self):
-        url = f"https://t9uupiatq0.execute-api.us-east-1.amazonaws.com/prod/voting/userQuest/checkin/user/{self.userId}/complete?version=v2"
-        response = self.session.post(url, headers=self.headers, timeout=20)
+    def post_voucher(self,captcha_voucher,existing_token):
+        url = f"https://45c2fc2a2095.4d3ac055.us-east-1.token.awswaf.com/45c2fc2a2095/voucher"
+        payload = {
+                "captcha_voucher": captcha_voucher,
+                "existing_token":existing_token
+        }
+        response = self.session.post(url, headers=self.headers,json=payload, timeout=20)
         data = response.json()
-        log_and_print(f"{self.alias} post_checkin data:{data}")
+        log_and_print(f"{self.alias} post_voucher data:{data}")
         return data
 
     def post_checkin(self):
@@ -466,16 +468,15 @@ class alphaorbeta:
             signature = self.signature()
             response = self.put_signInOrSignUpByWallet(signature)
             if response.status_code != 405 and response.status_code != 200:
-                raise Exception(f"Error: {response}")
+                raise Exception(f"put_signInOrSignUpByWallet Error: {response}")
             if response.status_code == 405:
                 key, iv, context = self.extract_goku_props(response.text)
-                proxyAddress, proxyPort, proxyLogin, proxyPassword = self.extract_proxy_details(proxyinfo)
                 challenge_script_url, captcha_script_url = self.extract_script_urls(response.text)
-                token1 = self.captcha_client.get_recaptcha_token(challenge_script_url, captcha_script_url, key,context,iv,proxyAddress,proxyPort,proxyLogin,proxyPassword)
-                self.headers['Authorization'] = 'Bearer ' + token1
+                captcha_voucher = self.captcha_client.get_recaptcha_token(challenge_script_url, captcha_script_url, key,context,iv)
+                self.headers['X-Aws-Waf-Token'] = captcha_voucher
                 response = self.put_signInOrSignUpByWallet(signature)
                 if response.status_code != 200:
-                    raise Exception(f"Error: {response}")
+                    raise Exception(f"put_signInOrSignUpByWallet 2Error: {response}")
             response = response.json()
             token = response["jwt"]
             self.userId = response["userId"]
@@ -992,7 +993,7 @@ class alphaorbeta:
 
 if __name__ == '__main__':
     UserInfoApp = UserInfo(log_and_print)
-    client_key = UserInfoApp.find_2Captch_clientkey()
+    client_key = UserInfoApp.find_capmonster_clientkey()
     app = alphaorbeta()
     retry_list = []
     failed_list = []

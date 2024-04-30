@@ -2,13 +2,11 @@ import requests
 import time
 import datetime
 from requests.exceptions import SSLError
-# https://github.com/2captcha/2captcha-python
 import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.realpath(__file__))))
 
-from twocaptcha import TwoCaptcha
 
 def log_message(text):
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -18,28 +16,24 @@ def log(text):
     message = log_message(text)
     print(message)
 
-class captchaClient:
+class capmonster:
     def __init__(self,  client_key, logger = log):
         self.client_key = client_key
         self.logger = logger
 
-    def create_task(self, challengeScript, captchaScript, websiteKey,context,iv,proxyAddress,proxyPort,proxyLogin,proxyPassword):
-        url = f'https://api.2captcha.com/createTask'
+    def create_task(self, challengeScript, captchaScript, websiteKey,context,iv):
+        url = f'https://api.capmonster.cloud/createTask'
         params = {
             "clientKey": self.client_key,
             "task": {
-                "type": "AmazonTask ", #AmazonTask AmazonTaskProxyless 
+                "type": "AmazonTaskProxyless",
                 "websiteURL": 'https://t9uupiatq0.execute-api.us-east-1.amazonaws.com',
                 "challengeScript": challengeScript,
                 "captchaScript": captchaScript,
                 "websiteKey": websiteKey,
                 "context": context,
                 "iv": iv,
-                "proxyType": "socks5",
-                "proxyAddress": proxyAddress,
-                "proxyPort": proxyPort,
-                "proxyLogin": proxyLogin,
-                "proxyPassword": proxyPassword
+                "cookieSolution": True
             }
         }
         response = requests.post(url, json=params)
@@ -50,7 +44,7 @@ class captchaClient:
         return result
 
     def get_task_result(self, task_id):
-        url = f'https://api.2captcha.com/getTaskResult'
+        url = f'https://api.capmonster.cloud/getTaskResult'
         params = {
             "clientKey": self.client_key,
             "taskId": task_id
@@ -60,7 +54,7 @@ class captchaClient:
                 response = requests.post(url, json=params)
                 result = response.json()
                 self.logger(f'get_task_result response: {result}')
-                if result['status'] == 'ready' or  result['errorId'] != 0 :
+                if result['status'] == 'ready' or result['errorId'] != 0 :
                     return result
                 elif result['status'] == 'processing':
                     time.sleep(6)  # 等待6秒再次查询
@@ -71,13 +65,13 @@ class captchaClient:
                 time.sleep(6)
 
 
-    def get_recaptcha_token(self, challengeScript, captchaScript, websiteKey,context,iv,proxyAddress,proxyPort,proxyLogin,proxyPassword):
-        task_response = self.create_task(challengeScript, captchaScript, websiteKey,context,iv,proxyAddress,proxyPort,proxyLogin,proxyPassword)
+    def get_recaptcha_token(self, challengeScript, captchaScript, websiteKey,context,iv):
+        task_response = self.create_task(challengeScript, captchaScript, websiteKey,context,iv)
         if 'taskId' in task_response:
             task_id = task_response['taskId']
             result = self.get_task_result(task_id)
-            if result and 'solution' in result and 'captcha_voucher' in result['solution']:
-                return result['solution']['captcha_voucher'],result['solution']['existing_token']
+            if result and 'solution' in result and 'cookies' in result['solution']:
+                return result['solution']['cookies']['aws-waf-token']
             else:
                 raise Exception(f"人机验证失败")
         else:

@@ -56,6 +56,22 @@ class UserInfo:
             self.logger(f"File {captchfile_path} not found")
         return None
 
+    def find_capmonster_clientkey(self):
+        try:
+            # 从文件中加载JSON数据
+            with open(captchfile_path, 'r', encoding='utf-8') as file:
+                data = json.load(file)
+
+            return data.get("capmonster", None)
+            
+        except json.JSONDecodeError:
+            self.logger("Invalid JSON data")
+        except KeyError as e:
+            self.logger(f"Missing key in JSON data: {e}")
+        except FileNotFoundError:
+            self.logger(f"File {captchfile_path} not found")
+        return None
+
     def find_alias_by_path(self, config_file = default_account_path):
         alias_list = []
         try:
