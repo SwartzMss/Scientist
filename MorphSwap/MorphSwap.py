@@ -42,7 +42,7 @@ def log_and_print(text):
 #https://rpc-testnet.morphl2.io
 
 class MorphSwapGM:
-    def __init__(self, rpc_url="https://eth-sepolia-public.unifra.io", chain_id=11155111):
+    def __init__(self, rpc_url="https://ethereum-sepolia-rpc.publicnode.com", chain_id=11155111):
         self.alias = None
         self.rpc = Rpc(rpc=rpc_url, chainid=chain_id, logger = log_and_print)
         self.web3 = Web3(Web3.HTTPProvider(rpc_url))
@@ -304,7 +304,7 @@ class MorphSwapGM:
             self.QueueForSwapFromUSDTtoMorph.append((alias, private_key,amount))
         self.QueueForApprovalResult.clear()
 
-    def check_transaction_status(self, tx_hash, timeout=300, interval=10):
+    def check_transaction_status(self, tx_hash, timeout=40, interval=5):
         """检查交易的状态，返回是否确认和交易状态。使用计数器实现超时。"""
         max_attempts = timeout // interval  # 计算最大尝试次数
         attempts = 0  # 初始化尝试次数计数器

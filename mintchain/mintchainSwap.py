@@ -22,6 +22,7 @@ parent_dir = os.path.dirname(script_dir)
 sys.path.append(parent_dir)
 from tools.UserInfo import UserInfo
 from tools.excelWorker import excelWorker
+from tools.socket5SwitchProxy import socket5SwitchProxy
 # 现在可以从tools目录导入Rpc
 from tools.rpc import Rpc
 # 获取当前时间并格式化为字符串
@@ -42,18 +43,12 @@ def log_and_print(text):
 class MintChainSwapGM:
     def __init__(self):
         self.alias = None
-        self.rpcForSepolia = Rpc(rpc="https://eth-sepolia-public.unifra.io", chainid=11155111, logger = log_and_print)
-        self.web3ForSepolia = Web3(Web3.HTTPProvider("https://eth-sepolia-public.unifra.io"))
+        self.rpcForSepolia = None
+        self.web3ForSepolia = Web3(Web3.HTTPProvider("https://ethereum-sepolia-rpc.publicnode.com"))
         self.rpcForMintChain = Rpc(rpc="sepolia-testnet-rpc.mintchain.io", chainid=1687, logger = log_and_print)
         self.web3ForMintChain = Web3(Web3.HTTPProvider("sepolia-testnet-rpc.mintchain.io"))
         self.account = None
         self.QueueForSwapFromEthtoMint = []
-        self.headers = {
-            'User-Agent': f'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/{random.randint(100, 116)}.0.0.0 Safari/537.36',
-            'Accept': 'application/json, text/plain, */*',
-            'Connection': 'keep-alive',
-            'Content-Type': 'application/json',
-        }
         
     def get_eth_balance(self):
         balance_result = self.rpcForSepolia.get_balance(self.account.address)
@@ -81,7 +76,8 @@ class MintChainSwapGM:
         return encoded_data_hex
 
     
-    def swap_eth_to_mint(self, alias, private_key):
+    def swap_eth_to_mint(self, alias, private_key,proxyinfo):
+        self.rpcForSepolia = Rpc(rpc="https://ethereum-sepolia-rpc.publicnode.com", chainid=11155111, logger = log_and_print,proxies= proxyinfo)
         amount = round(random.uniform(0.001, 0.005), 3)
         self.account = self.web3ForSepolia.eth.account.from_key(private_key) 
         balance = self.get_eth_balance()
@@ -113,7 +109,7 @@ class MintChainSwapGM:
 
         except Exception as e:
             log_and_print(f"{alias} swap_eth_to_mint failed: {e}")
-            excel_manager.update_info(alias, f" {e}", "swap_eth_to_mint")
+            excel_manager.update_info(alias, f" {e}", "SwapFromEthtoMint")
 
 
     def check_all_transaction_for_SwapFromEthtoMint(self):
@@ -154,13 +150,25 @@ if __name__ == "__main__":
     UserInfoApp = UserInfo(log_and_print)
     excel_manager = excelWorker("MintChainSwapGM", log_and_print)
     app = MintChainSwapGM()
+    proxyApp = socket5SwitchProxy(logger = log_and_print)
 
     # swap_eth_to_mint
     alais_list = UserInfoApp.find_alias_by_path()
     for alias in alais_list:
         log_and_print(f"statring running by alias {alias}")
         private_key = UserInfoApp.find_ethinfo_by_alias_in_file(alias)
-        app.swap_eth_to_mint(alias, private_key)
+        proxyName = UserInfoApp.find_socket5proxy_by_alias_in_file(alias)
+        if not proxyName:
+            log_and_print(f"cannot find proxy username = {alias}")
+            excel_manager.update_info(alias, f"cannot find proxy ","SwapFromEthtoMint")
+            continue
+        result, proxyinfo = proxyApp.change_proxy_until_success(proxyName)
+        if result == False:
+            log_and_print(f"change_proxy_until_success failed {alias}")
+            excel_manager.update_info(alias, f"change_proxy_until_success failed","SwapFromEthtoMint")
+            continue
+
+        app.swap_eth_to_mint(alias, private_key,proxyinfo)
     app.check_all_transaction_for_SwapFromEthtoMint()
 
     time.sleep(5)

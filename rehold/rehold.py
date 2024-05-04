@@ -137,6 +137,16 @@ class ReholdGM:
         # 检查当前时间是否达到或超过目标时间
         return current_time >= target_time
 
+    def post_claim(self,recaptchaResponse):
+        url = f"https://app.rehold.io/api/v1/points/claim"
+        payload = {
+            "recaptchaResponse":recaptchaResponse,
+            "recaptchaType":"turnstile"
+        }
+        response = self.session.post(url, headers=self.headers, json=payload, timeout=10)
+        log_and_print(f"{self.alias} post_claim status_code :{response.status_code }")
+        return response
+
     def has_time_arrived(self, time_str):
         # 获取当前时间
         current_time = datetime.datetime.now(pytz.timezone('Asia/Shanghai'))

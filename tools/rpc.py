@@ -2,10 +2,7 @@ import requests
 from requests.exceptions import SSLError
 import math
 import time
-headers = {
-    'Content-Type': 'application/json',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/110.0.0.0 Safari/537.36'
-    }
+from fake_useragent import UserAgent
 
 def mylog(message):
     print(message)
@@ -18,13 +15,18 @@ class Rpc:
         self.rpc = rpc
         self.chainid = chainid
         self.proxies = proxies
+        self.headers = {
+            'Content-Type': 'application/json',
+            }
+        ua = UserAgent()
+        self.headers['user-agent'] = ua.random
         self.logger = logger
 
     def get_current_block(self):
         """获取最新区块"""
         data = {"jsonrpc":"2.0","method":"eth_blockNumber","params":[],"id":1}
         try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            res = requests.post(self.rpc, json=data, headers=self.headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
             self.logger(f"get_current_block  Error: {e}")
@@ -38,7 +40,7 @@ class Rpc:
             number = hex(number)
         data = {"jsonrpc":"2.0","method":"eth_getBlockByNumber","params":[number,True],"id":1}
         try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            res = requests.post(self.rpc, json=data, headers=self.headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
             self.logger(f"get_block_detail  Error: {e}")
@@ -49,7 +51,7 @@ class Rpc:
     def call(self, to, data):
         data = {"jsonrpc":"2.0","method":"eth_call","params":[{"to": to, "data": data}, "latest"],"id":1}
         try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            res = requests.post(self.rpc, json=data, headers=self.headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
             self.logger(f"call  Error: {e}")
@@ -68,11 +70,14 @@ class Rpc:
         max_retries = 5  # 设置最大重试次数
         for attempt in range(max_retries):
             try:
-                response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+                response = requests.post(self.rpc, json=data, headers=self.headers, proxies=self.proxies)
                 res_data = response.json()
                 if res_data and 'error' not in res_data:
-                    return int(res_data['result'], 16)  # 正常情况下返回结果
+                    return int(res_data['result'], 16), "success"  # 正常情况下返回结果
                 elif res_data and 'error' in res_data:
+                    if "execution reverted" in res_data['error']["message"]:
+                        self.logger(f"Attempt {attempt + 1} failed - estimate_gas Error: {res_data['error']}")
+                        return None, "execution reverted"
                     raise Exception(f"Error: {res_data['error']}")  # 抛出异常以处理错误
             except Exception as e:
                 self.logger(f"Attempt {attempt + 1} failed - estimate_gas Error: {e}")
@@ -80,13 +85,13 @@ class Rpc:
     
         # 所有尝试失败后记录错误并返回None
         self.logger("Failed to estimate gas after several attempts.")
-        return None
+        return None, res_data['error']["message"]
     
     def get_transaction(self, txhash):
         """获取的交易详情"""
         data = {"jsonrpc":"2.0","method":"eth_getTransactionByHash","params":[txhash],"id":1}
         try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            res = requests.post(self.rpc, json=data, headers=self.headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
             self.logger(f"get_transaction  Error: {e}")
@@ -100,7 +105,7 @@ class Rpc:
         max_retries = 5
         for attempt in range(max_retries):
             try:
-                response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+                response = requests.post(self.rpc, json=data, headers=self.headers, proxies=self.proxies)
                 dataInfo =  response.json()
                 if dataInfo and 'error' in dataInfo:
                     raise Exception(f"Error: {dataInfo}")
@@ -118,7 +123,7 @@ class Rpc:
         max_retries = 5
         for attempt in range(max_retries):
             try:
-                response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+                response = requests.post(self.rpc, json=data, headers=self.headers, proxies=self.proxies)
                 dataInfo = response.json()
                 if dataInfo and 'error' in dataInfo:
                     raise Exception(f"Error: {dataInfo}")
@@ -136,7 +141,7 @@ class Rpc:
         """广播交易"""
         data = {"jsonrpc":"2.0","method":"eth_sendRawTransaction","params":[hex],"id":1}
         try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            res = requests.post(self.rpc, json=data, headers=self.headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
             self.logger(f"send_raw_transaction  Error: {e}")
@@ -150,7 +155,7 @@ class Rpc:
         max_retries = 5  # 设置最大重试次数
         for attempt in range(max_retries):
             try:
-                response = requests.post(self.rpc, json=data, headers=headers, proxies=self.proxies)
+                response = requests.post(self.rpc, json=data, headers=self.headers, proxies=self.proxies)
                 result = response.json()
                 if result and 'error' in result:
                     raise Exception(f"Error from server: {result['error']}")
@@ -171,7 +176,7 @@ class Rpc:
         block = hex(block) if isinstance(block, int) else block
         data = {"jsonrpc":"2.0","method":"eth_getCode","params":[address, block],"id":1}
         try:
-            res = requests.post(self.rpc, json=data, headers=headers,  proxies=self.proxies)
+            res = requests.post(self.rpc, json=data, headers=self.headers,  proxies=self.proxies)
             return res.json()
         except Exception as e:
             self.logger(f"get_code  Error: {e}")
@@ -199,6 +204,7 @@ class Rpc:
                 return None
             gasprice = int(gasprice_result['result'], 16)
     
+        gasprice = int(gasprice * 1.1)  # 增加10%的gas价格
         last_response = None  # 初始化最后一次响应变量
     
         # 尝试发送交易，最多重试max_retries次
@@ -206,7 +212,7 @@ class Rpc:
             nonce = int(self.get_transaction_nonce(account.address)['result'], 16)
             if nonce is None:
                 self.logger("Failed to fetch nonce.")
-                return None
+                return "error, Failed to fetch nonce."
             transaction = {
                 'from': account.address,
                 'to': to,
@@ -216,10 +222,10 @@ class Rpc:
                 'chainId': hex(self.chainid) if isinstance(self.chainid, int) else self.chainid,
                 'data': kw.get('data', '0x')
             }
-            gaslimit = self.get_gaslimit(transaction)  # 自动获取gaslimit
+            gaslimit, msg = self.get_gaslimit(transaction)  # 自动获取gaslimit
             if gaslimit is None:
-                self.logger("Failed to estimate gas limit.")
-                continue
+                self.logger("Failed to estimate gas limit. ")
+                return "error, Failed to estimate gas limit"
             gaslimit =  int(gaslimit * 1.3)
             transaction['gas'] = hex(gaslimit)
             transaction.update(kw)

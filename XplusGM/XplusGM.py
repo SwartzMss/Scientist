@@ -51,12 +51,12 @@ class XplusGM:
         self.close_ldplayer()
         time.sleep(2)
         """启动指定索引号的雷电模拟器实例"""
-        command = f'"E:\\leidian\\LDPlayer9\\dnplayer.exe" index={self.index}'
+        command = f'"D:\\leidian\\LDPlayer9\\dnplayer.exe" index={self.index}'
         subprocess.Popen(command, shell=True)
 
     def close_ldplayer(self):
         """关闭指定索引号的雷电模拟器实例"""
-        command = f'"E:\\leidian\\LDPlayer9\\dnconsole.exe" quit --index {self.index}'
+        command = f'"D:\\leidian\\LDPlayer9\\dnconsole.exe" quit --index {self.index}'
         subprocess.Popen(command, shell=True)
         log_and_print(f"Closing LDPlayer username={self.alias}...")
 
@@ -165,6 +165,7 @@ class XplusGM:
             if not error_occurred:
                 if self.find_and_click_element('//android.view.View[@text="自動挖礦"]') == True:
                     log_and_print(f"switch page successfully: {self.alias}")
+                    time.sleep(5)
                 else:
                     log_and_print(f"switch page failed: {self.alias}")
                     excel_manager.update_info(self.alias, "switch page failed")
