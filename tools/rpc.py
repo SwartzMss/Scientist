@@ -145,6 +145,8 @@ class Rpc:
             return res.json()
         except Exception as e:
             self.logger(f"send_raw_transaction  Error: {e}")
+            if 'res' in locals():
+                self.logger(f"Response content: {res.content.decode('utf-8')}")
             time.sleep(2)
             # 处理错误，例如重试或返回默认值
             return None
